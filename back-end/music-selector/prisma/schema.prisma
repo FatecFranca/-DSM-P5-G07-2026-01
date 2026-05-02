@@ -1,0 +1,212 @@
+// prisma/schema.prisma
+
+generator client {
+  provider = "prisma-client"
+  output = "../src/generated/prisma"
+  moduleFormat = "cjs"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+// ─────────────────────────────────────────
+// USUÁRIOS
+// ─────────────────────────────────────────
+
+model User {
+  id              String    @id @default(uuid())
+  name            String    @db.VarChar(50)
+  email           String    @unique @db.VarChar(100)
+  birthDate       DateTime  @map("birth_date") @db.Date
+  passwordHash    String    @map("password_hash")
+  onboardingDone  Boolean   @default(false) @map("onboarding_done")
+  createdAt       DateTime  @default(now()) @map("created_at")
+  updatedAt       DateTime  @updatedAt @map("updated_at")
+
+  onboardingProfile OnboardingProfile?
+  genres            UserGenre[]
+  playlists         Playlist[]
+  feedbacks         Feedback[]
+
+  @@map("users")
+}
+
+// ─────────────────────────────────────────
+// ONBOARDING
+// ─────────────────────────────────────────
+
+model OnboardingProfile {
+  id               String         @id @default(uuid())
+  userId           String         @unique @map("user_id")
+  audioPreference  AudioPreference @map("audio_preference")
+  updatedAt        DateTime       @updatedAt @map("updated_at")
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("onboarding_profiles")
+}
+
+enum AudioPreference {
+  INSTRUMENTAL
+  VOCAL
+  MIXED
+
+  @@map("audio_preference")
+}
+
+// ─────────────────────────────────────────
+// GÊNEROS
+// ─────────────────────────────────────────
+
+model Genre {
+  id         String @id @default(uuid())
+  name       String @db.VarChar(100)
+  spotifyKey String @unique @map("spotify_key") @db.VarChar(50)
+
+  userGenres UserGenre[]
+
+  @@map("genres")
+}
+
+model UserGenre {
+  id      String @id @default(uuid())
+  userId  String @map("user_id")
+  genreId String @map("genre_id")
+
+  user  User  @relation(fields: [userId], references: [id], onDelete: Cascade)
+  genre Genre @relation(fields: [genreId], references: [id])
+
+  @@unique([userId, genreId])
+  @@map("user_genres")
+}
+
+// ─────────────────────────────────────────
+// MÚSICAS (seed do Spotify Dataset)
+// ─────────────────────────────────────────
+
+model Track {
+  id                 String   @id @default(uuid())
+  spotifyId          String   @unique @map("spotify_id") @db.VarChar(50)
+  trackName          String   @map("track_name") @db.VarChar(255)
+  artists            String   @db.Text  // Separados por ";"
+  albumName          String   @map("album_name") @db.VarChar(255)
+  popularity         Int
+  durationMs         Int      @map("duration_ms")
+  explicit           Boolean  @default(false)
+  energy             Float    // 0.0 a 1.0
+  valence            Float    // 0.0 a 1.0
+  danceability       Float    // 0.0 a 1.0
+  acousticness       Float    // 0.0 a 1.0
+  instrumentalness   Float    // 0.0 a 1.0
+  speechiness        Float    // 0.0 a 1.0
+  liveness           Float    // 0.0 a 1.0
+  loudness           Float    // em dB
+  tempo              Float    // BPM
+  key                Int      // -1 a 11 (C = 0, C♯/D♭ = 1, etc)
+  mode               Int      // 0 = minor, 1 = major
+  timeSignature      Int      @map("time_signature")  // 3 a 7
+  trackGenre         String   @map("track_genre") @db.VarChar(100)
+  createdAt          DateTime @default(now()) @map("created_at")
+
+  playlistTracks PlaylistTrack[]
+  feedbacks      Feedback[]
+
+  @@index([trackGenre])
+  @@map("tracks")
+}
+
+// ─────────────────────────────────────────
+// PLAYLISTS
+// ─────────────────────────────────────────
+
+model Playlist {
+  id          String       @id @default(uuid())
+  userId      String       @map("user_id")
+  name        String       @db.VarChar(100)
+  objective   Objective
+  energyLevel EnergyLevel  @map("energy_level")
+  mood        Mood
+  type        PlaylistType
+  generatedAt DateTime     @default(now()) @map("generated_at")
+
+  user   User            @relation(fields: [userId], references: [id], onDelete: Cascade)
+  tracks PlaylistTrack[]
+
+  @@map("playlists")
+}
+
+model PlaylistTrack {
+  id         String @id @default(uuid())
+  playlistId String @map("playlist_id")
+  trackId    String @map("track_id")
+  position   Int
+
+  playlist Playlist @relation(fields: [playlistId], references: [id], onDelete: Cascade)
+  track    Track    @relation(fields: [trackId], references: [id])
+
+  @@unique([playlistId, position])
+  @@map("playlist_tracks")
+}
+
+// ─────────────────────────────────────────
+// FEEDBACK (Like / Dislike)
+// ─────────────────────────────────────────
+
+model Feedback {
+  id               String   @id @default(uuid())
+  userId           String?  @map("user_id")   // nullable para anonimização (RN30)
+  trackId          String   @map("track_id")
+  reaction         Reaction
+  objectiveContext Objective @map("objective_context")
+  createdAt        DateTime @default(now()) @map("created_at")
+
+  user  User?  @relation(fields: [userId], references: [id], onDelete: SetNull)
+  track Track  @relation(fields: [trackId], references: [id])
+
+  @@map("feedbacks")
+}
+
+// ─────────────────────────────────────────
+// ENUMS
+// ─────────────────────────────────────────
+
+enum Objective {
+  FOCUS
+  WORKOUT
+  RELAX
+  MOOD_BOOST
+
+  @@map("objective")
+}
+
+enum EnergyLevel {
+  LOW
+  MEDIUM
+  HIGH
+
+  @@map("energy_level")
+}
+
+enum Mood {
+  HAPPY
+  NEUTRAL
+  ANXIOUS
+  SAD
+
+  @@map("mood")
+}
+
+enum PlaylistType {
+  AUTOMATIC   // Vibes Diárias
+  ON_DEMAND   // Criar Minha Vibe
+
+  @@map("playlist_type")
+}
+
+enum Reaction {
+  LIKE
+  DISLIKE
+
+  @@map("reaction")
+}
