@@ -77,8 +77,22 @@ describe('RecommendationsService', () => {
     jest.clearAllMocks();
   });
 
-  it('should be defined', () => {
-    expect(service).toBeDefined();
+  describe('initialization', () => {
+    it('should be defined', () => {
+      expect(service).toBeDefined();
+    });
+
+    it('should have PlaylistGeneratorService injected', () => {
+      expect(playlistGeneratorService).toBeDefined();
+    });
+
+    it('should have PlaylistService injected', () => {
+      expect(playlistService).toBeDefined();
+    });
+
+    it('should have FeedbackService injected', () => {
+      expect(feedbackService).toBeDefined();
+    });
   });
 
   describe('getRecommendations', () => {
@@ -99,6 +113,23 @@ describe('RecommendationsService', () => {
       expect(result).toBeDefined();
       expect(playlistGeneratorService.generateRecommendations).toHaveBeenCalledWith('user123', dto);
     });
+
+    it('should call service with correct parameters', async () => {
+      jest
+        .spyOn(playlistGeneratorService, 'generateRecommendations')
+        .mockResolvedValue(mockRecommendationResponse as any);
+
+      await service.getRecommendations('user456', dto);
+
+      expect(playlistGeneratorService.generateRecommendations).toHaveBeenCalledWith(
+        'user456',
+        expect.objectContaining({
+          objective: ObjectiveType.FOCUS,
+          mood: MoodType.HAPPY,
+          energyLevel: EnergyLevelType.HIGH,
+        }),
+      );
+    });
   });
 
   describe('generateDailyVibe', () => {
@@ -111,6 +142,18 @@ describe('RecommendationsService', () => {
 
       expect(result).toBeDefined();
       expect(playlistGeneratorService.generateDailyVibe).toHaveBeenCalledWith('user123');
+    });
+
+    it('should return response with required properties', async () => {
+      jest
+        .spyOn(playlistGeneratorService, 'generateDailyVibe')
+        .mockResolvedValue(mockRecommendationResponse as any);
+
+      const result = await service.generateDailyVibe('user123');
+
+      expect(result).toHaveProperty('userId');
+      expect(result).toHaveProperty('playlistId');
+      expect(result).toHaveProperty('tracks');
     });
   });
 
@@ -125,6 +168,16 @@ describe('RecommendationsService', () => {
 
       expect(result).toEqual(mockHistory);
       expect(playlistService.getUserPlaylistHistory).toHaveBeenCalledWith('user123', 10);
+    });
+
+    it('should handle different limit parameters', async () => {
+      jest
+        .spyOn(playlistService, 'getUserPlaylistHistory')
+        .mockResolvedValue([]);
+
+      await service.getUserPlaylistHistory('user123', 50);
+
+      expect(playlistService.getUserPlaylistHistory).toHaveBeenCalledWith('user123', 50);
     });
   });
 
@@ -147,6 +200,21 @@ describe('RecommendationsService', () => {
       expect(result).toBeDefined();
       expect(feedbackService.recordFeedback).toHaveBeenCalledWith('user123', 'track1', 'LIKE', 'FOCUS');
     });
+
+    it('should pass correct parameters to feedback service', async () => {
+      jest
+        .spyOn(feedbackService, 'recordFeedback')
+        .mockResolvedValue({} as any);
+
+      await service.recordFeedback('user456', 'track789', 'DISLIKE', 'RELAX');
+
+      expect(feedbackService.recordFeedback).toHaveBeenCalledWith(
+        'user456',
+        'track789',
+        'DISLIKE',
+        'RELAX',
+      );
+    });
   });
 
   describe('getUserFeedbackHistory', () => {
@@ -160,6 +228,16 @@ describe('RecommendationsService', () => {
 
       expect(result).toEqual(mockHistory);
       expect(feedbackService.getUserFeedbackHistory).toHaveBeenCalledWith('user123', 50);
+    });
+
+    it('should handle different limit parameters', async () => {
+      jest
+        .spyOn(feedbackService, 'getUserFeedbackHistory')
+        .mockResolvedValue([]);
+
+      await service.getUserFeedbackHistory('user123', 100);
+
+      expect(feedbackService.getUserFeedbackHistory).toHaveBeenCalledWith('user123', 100);
     });
   });
 });

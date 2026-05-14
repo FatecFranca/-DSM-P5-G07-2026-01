@@ -96,8 +96,14 @@ describe('RecommendationsController', () => {
     jest.clearAllMocks();
   });
 
-  it('should be defined', () => {
-    expect(controller).toBeDefined();
+  describe('initialization', () => {
+    it('should be defined', () => {
+      expect(controller).toBeDefined();
+    });
+
+    it('should have RecommendationsService injected', () => {
+      expect(service).toBeDefined();
+    });
   });
 
   describe('getRecommendations', () => {
@@ -155,6 +161,25 @@ describe('RecommendationsController', () => {
         controller.getRecommendations(mockRequest as any, dto),
       ).rejects.toThrow('Service error');
     });
+
+    it('should return recommendations with correct structure', async () => {
+      const dto: GetRecommendationsDto = {
+        objective: ObjectiveType.FOCUS,
+        mood: MoodType.HAPPY,
+        energyLevel: EnergyLevelType.HIGH,
+        limit: 10,
+      };
+
+      jest
+        .spyOn(service, 'getRecommendations')
+        .mockResolvedValue(mockRecommendationResponse as any);
+
+      const result = await controller.getRecommendations(mockRequest as any, dto);
+
+      expect(result).toHaveProperty('playlistId');
+      expect(result).toHaveProperty('tracks');
+      expect(result.tracks).toBeInstanceOf(Array);
+    });
   });
 
   describe('getDailyVibe', () => {
@@ -186,6 +211,18 @@ describe('RecommendationsController', () => {
       await controller.getDailyVibe(mockRequest as any);
 
       expect(service.generateDailyVibe).toHaveBeenCalledWith('user123');
+    });
+
+    it('should return daily vibe with correct structure', async () => {
+      jest
+        .spyOn(service, 'generateDailyVibe')
+        .mockResolvedValue(mockAutomaticResponse as any);
+
+      const result = await controller.getDailyVibe(mockRequest as any);
+
+      expect(result).toHaveProperty('playlistId');
+      expect(result).toHaveProperty('tracks');
+      expect(result).toHaveProperty('userId');
     });
   });
 });

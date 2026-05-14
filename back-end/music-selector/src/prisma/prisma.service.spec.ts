@@ -31,28 +31,50 @@ describe('PrismaService', () => {
   });
 
   afterEach(async () => {
+    jest.clearAllMocks();
     if (service?.onModuleDestroy) {
       await service.onModuleDestroy();
     }
   });
 
-  it('should be defined', () => {
-    expect(service).toBeDefined();
+  describe('initialization', () => {
+    it('should be defined', () => {
+      expect(service).toBeDefined();
+    });
+
+    it('should have all required models', () => {
+      expect(service.user).toBeDefined();
+      expect(service.track).toBeDefined();
+      expect(service.playlist).toBeDefined();
+      expect(service.feedback).toBeDefined();
+      expect(service.genre).toBeDefined();
+      expect(service.userGenre).toBeDefined();
+      expect(service.onboardingProfile).toBeDefined();
+      expect(service.playlistTrack).toBeDefined();
+    });
   });
 
-  describe('onModuleInit', () => {
+  describe('lifecycle', () => {
     it('should have onModuleInit method', () => {
       expect(service.onModuleInit).toBeDefined();
     });
-  });
 
-  describe('onModuleDestroy', () => {
     it('should have onModuleDestroy method', () => {
       expect(service.onModuleDestroy).toBeDefined();
     });
+
+    it('should call onModuleInit during initialization', async () => {
+      await service.onModuleInit();
+      expect(service.onModuleInit).toHaveBeenCalled();
+    });
+
+    it('should call onModuleDestroy during cleanup', async () => {
+      await service.onModuleDestroy();
+      expect(service.onModuleDestroy).toHaveBeenCalled();
+    });
   });
 
-  describe('getters', () => {
+  describe('database models', () => {
     it('should return user model', () => {
       const userModel = service.user;
       expect(userModel).toBeDefined();
@@ -92,13 +114,15 @@ describe('PrismaService', () => {
       const playlistTrackModel = service.playlistTrack;
       expect(playlistTrackModel).toBeDefined();
     });
+  });
 
-    it('should return $connect method', () => {
+  describe('connection methods', () => {
+    it('should have $connect method', () => {
       const connect = service.$connect;
       expect(connect).toBeDefined();
     });
 
-    it('should return $disconnect method', () => {
+    it('should have $disconnect method', () => {
       const disconnect = service.$disconnect;
       expect(disconnect).toBeDefined();
     });

@@ -1,0 +1,907 @@
+{
+  "openapi": "3.0.0",
+  "info": {
+    "title": "MusicSelector API",
+    "description": "API de recomendação musical com IA - Sistema multiplataforma de recomendação musical com classificação por estado emocional e contexto situacional",
+    "version": "1.0.0",
+    "contact": {
+      "name": "MusicSelector Team",
+      "url": "https://musicSelector.com"
+    }
+  },
+  "servers": [
+    {
+      "url": "http://localhost:3000",
+      "description": "Development server"
+    }
+  ],
+  "components": {
+    "securitySchemes": {
+      "bearerAuth": {
+        "type": "http",
+        "scheme": "bearer",
+        "bearerFormat": "JWT"
+      }
+    },
+    "schemas": {
+      "LoginRequest": {
+        "type": "object",
+        "required": ["email", "password"],
+        "properties": {
+          "email": {
+            "type": "string",
+            "format": "email",
+            "example": "user@example.com"
+          },
+          "password": {
+            "type": "string",
+            "format": "password",
+            "minLength": 8,
+            "example": "securePassword123"
+          }
+        }
+      },
+      "LoginResponse": {
+        "type": "object",
+        "properties": {
+          "access_token": {
+            "type": "string",
+            "example": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
+          }
+        }
+      },
+      "CreateUserRequest": {
+        "type": "object",
+        "required": ["name", "email", "emailConfirmation", "password", "passwordConfirmation", "dateOfBirth"],
+        "properties": {
+          "name": {
+            "type": "string",
+            "maxLength": 50,
+            "example": "João Silva"
+          },
+          "email": {
+            "type": "string",
+            "format": "email",
+            "example": "joao@example.com"
+          },
+          "emailConfirmation": {
+            "type": "string",
+            "format": "email",
+            "example": "joao@example.com"
+          },
+          "password": {
+            "type": "string",
+            "minLength": 8,
+            "example": "MyPassword123!"
+          },
+          "passwordConfirmation": {
+            "type": "string",
+            "minLength": 8,
+            "example": "MyPassword123!"
+          },
+          "dateOfBirth": {
+            "type": "string",
+            "format": "date",
+            "example": "2005-01-15"
+          }
+        }
+      },
+      "User": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "name": {
+            "type": "string"
+          },
+          "email": {
+            "type": "string"
+          },
+          "message": {
+            "type": "string"
+          }
+        }
+      },
+      "RecommendationRequest": {
+        "type": "object",
+        "required": ["objective", "mood", "energyLevel"],
+        "properties": {
+          "objective": {
+            "type": "string",
+            "enum": ["FOCUS", "RELAX", "WORKOUT", "PARTY"],
+            "example": "FOCUS"
+          },
+          "mood": {
+            "type": "string",
+            "enum": ["HAPPY", "NEUTRAL", "ANXIOUS", "SAD"],
+            "example": "HAPPY"
+          },
+          "energyLevel": {
+            "type": "string",
+            "enum": ["LOW", "MEDIUM", "HIGH"],
+            "example": "HIGH"
+          },
+          "limit": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 50,
+            "example": 10
+          }
+        }
+      },
+      "Track": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "title": {
+            "type": "string"
+          },
+          "artist": {
+            "type": "string"
+          },
+          "album": {
+            "type": "string"
+          },
+          "genre": {
+            "type": "string"
+          },
+          "popularity": {
+            "type": "integer"
+          },
+          "features": {
+            "type": "object",
+            "properties": {
+              "energy": {
+                "type": "number"
+              },
+              "valence": {
+                "type": "number"
+              },
+              "danceability": {
+                "type": "number"
+              }
+            }
+          }
+        }
+      },
+      "RecommendationResponse": {
+        "type": "object",
+        "properties": {
+          "playlistId": {
+            "type": "string"
+          },
+          "playlistName": {
+            "type": "string"
+          },
+          "objective": {
+            "type": "string"
+          },
+          "mood": {
+            "type": "string"
+          },
+          "energyLevel": {
+            "type": "string"
+          },
+          "generatedAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "tracks": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/Track"
+            }
+          },
+          "totalTracks": {
+            "type": "integer"
+          }
+        }
+      },
+      "FeedbackRequest": {
+        "type": "object",
+        "required": ["trackId", "reaction", "objectiveContext"],
+        "properties": {
+          "trackId": {
+            "type": "string",
+            "example": "spotify_track_id"
+          },
+          "reaction": {
+            "type": "string",
+            "enum": ["LIKE", "DISLIKE"],
+            "example": "LIKE"
+          },
+          "objectiveContext": {
+            "type": "string",
+            "enum": ["FOCUS", "RELAX", "WORKOUT", "PARTY"],
+            "example": "FOCUS"
+          }
+        }
+      },
+      "OnboardingRequest": {
+        "type": "object",
+        "required": ["favoriteGenres", "audioPreference"],
+        "properties": {
+          "favoriteGenres": {
+            "type": "array",
+            "minItems": 1,
+            "maxItems": 5,
+            "items": {
+              "type": "string"
+            },
+            "example": ["Rock", "Pop", "Jazz"]
+          },
+          "audioPreference": {
+            "type": "string",
+            "enum": ["VOCAL", "INSTRUMENTAL"],
+            "example": "VOCAL"
+          }
+        }
+      }
+    }
+  },
+  "paths": {
+    "/auth/login": {
+      "post": {
+        "tags": ["Auth"],
+        "summary": "Login de usuário",
+        "description": "RN07, RNF-S04: Autentica um usuário com email e senha. Retorna JWT token para requisições autenticadas. Rate limit: 5 tentativas por minuto",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/LoginRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Login realizado com sucesso",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/LoginResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Credenciais inválidas"
+          },
+          "429": {
+            "description": "Muitas tentativas de login (rate limit)"
+          }
+        }
+      }
+    },
+    "/users/register": {
+      "post": {
+        "tags": ["Users"],
+        "summary": "Registrar novo usuário",
+        "description": "RN01-RN06: Cria novo usuário com validações de email, senha e idade. Email deve ser único, senha 8+ chars, idade 13+ anos",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateUserRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Usuário criado com sucesso",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/User"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Dados inválidos"
+          },
+          "409": {
+            "description": "Email já cadastrado"
+          }
+        }
+      }
+    },
+    "/users/login": {
+      "post": {
+        "tags": ["Users"],
+        "summary": "Login de usuário",
+        "description": "RN07-RN09: Autentica usuário e retorna JWT token",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/LoginRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Login bem-sucedido",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/LoginResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Credenciais inválidas"
+          }
+        }
+      }
+    },
+    "/users/forgot-password": {
+      "post": {
+        "tags": ["Users"],
+        "summary": "Solicitar reset de senha",
+        "description": "RN08: Envia link de reset de senha para o email (segurança: não revela se email existe)",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "email": {
+                    "type": "string",
+                    "format": "email"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Email de reset enviado (ou simulado)"
+          }
+        }
+      }
+    },
+    "/users/reset-password": {
+      "post": {
+        "tags": ["Users"],
+        "summary": "Resetar senha",
+        "description": "RNF-S03: Reseta a senha com novo hash BCrypt",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "token": {
+                    "type": "string"
+                  },
+                  "password": {
+                    "type": "string",
+                    "minLength": 8
+                  },
+                  "passwordConfirmation": {
+                    "type": "string",
+                    "minLength": 8
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Senha resetada com sucesso"
+          },
+          "400": {
+            "description": "Senhas não correspondem"
+          }
+        }
+      }
+    },
+    "/users/{id}/onboarding": {
+      "post": {
+        "tags": ["Users"],
+        "summary": "Completar onboarding",
+        "description": "RN10-RN13: Wizard de 3 passos (gêneros, estilo escuta, pref vocal/instrumental). Obrigatório na primeira vez",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "description": "ID do usuário",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/OnboardingRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Onboarding completado"
+          }
+        }
+      }
+    },
+    "/users/{id}": {
+      "patch": {
+        "tags": ["Users"],
+        "summary": "Atualizar perfil do usuário",
+        "description": "Permite editar dados do perfil do usuário",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "description": "ID do usuário",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "name": {
+                    "type": "string"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Perfil atualizado"
+          }
+        }
+      },
+      "get": {
+        "tags": ["Users"],
+        "summary": "Obter dados do usuário",
+        "description": "Retorna informações de um usuário específico",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "description": "ID do usuário",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Dados do usuário",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/User"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Usuário não encontrado"
+          }
+        }
+      },
+      "delete": {
+        "tags": ["Users"],
+        "summary": "Deletar conta (soft delete)",
+        "description": "RN29-RN30: LGPD - Deleta conta e anonimiza histórico de feedback",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "description": "ID do usuário",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Conta deletada"
+          }
+        }
+      }
+    },
+    "/users/{id}/hard": {
+      "delete": {
+        "tags": ["Users"],
+        "summary": "Deletar conta permanentemente (hard delete)",
+        "description": "Remove completamente o usuário e todos os dados",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "description": "ID do usuário",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Usuário permanentemente deletado"
+          }
+        }
+      }
+    },
+    "/users/logout": {
+      "post": {
+        "tags": ["Users"],
+        "summary": "Logout",
+        "description": "Encerra a sessão do usuário",
+        "responses": {
+          "200": {
+            "description": "Logout bem-sucedido"
+          }
+        }
+      }
+    },
+    "/users": {
+      "get": {
+        "tags": ["Users"],
+        "summary": "Listar todos os usuários",
+        "description": "Retorna lista de todos os usuários (apenas desenvolvimento)",
+        "responses": {
+          "200": {
+            "description": "Lista de usuários",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/User"
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/recommendations/generate": {
+      "post": {
+        "tags": ["Recommendations"],
+        "summary": "Gerar recomendações sob demanda",
+        "description": "RN17-RN22: Cria vibe customizada com Objetivo + Energia + Humor. Retorna 10 faixas ordenadas por relevância",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/RecommendationRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Recomendações geradas com sucesso",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RecommendationResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Token inválido ou expirado"
+          }
+        }
+      }
+    },
+    "/api/recommendations/daily-vibe": {
+      "get": {
+        "tags": ["Recommendations"],
+        "summary": "Gerar Vibe Diária",
+        "description": "RN10, RN14-RN15: Recomendação automática recalculada a cada 24h baseada no perfil do usuário",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Vibe diária gerada com sucesso",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RecommendationResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Não autenticado"
+          }
+        }
+      }
+    },
+    "/api/recommendations/vibes": {
+      "get": {
+        "tags": ["Recommendations"],
+        "summary": "Listar Vibes Diárias",
+        "description": "RN14-RN15: Retorna histórico de vibes diárias do usuário",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Lista de vibes diárias",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/RecommendationResponse"
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/recommendations/history": {
+      "get": {
+        "tags": ["Recommendations"],
+        "summary": "Histórico de playlists",
+        "description": "RN14: Retorna lista paginada de playlists criadas pelo usuário",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "limit",
+            "in": "query",
+            "required": false,
+            "description": "Limite de resultados (padrão: 10)",
+            "schema": {
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Histórico de playlists",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/RecommendationResponse"
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/recommendations/feedback": {
+      "get": {
+        "tags": ["Recommendations"],
+        "summary": "Histórico de feedback",
+        "description": "RN23-RN24: Retorna histórico de likes/dislikes do usuário",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "limit",
+            "in": "query",
+            "required": false,
+            "description": "Limite de resultados (padrão: 50)",
+            "schema": {
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Histórico de feedback",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "type": "object"
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "tags": ["Recommendations"],
+        "summary": "Registrar feedback de música",
+        "description": "RN23-RN24: Registra like/dislike e bloqueia música em contexto (dislike). Melhora futuras recomendações",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/FeedbackRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Feedback registrado com sucesso"
+          },
+          "400": {
+            "description": "Dados de feedback inválidos"
+          }
+        }
+      }
+    },
+    "/api/recommendations/feedback/stats": {
+      "get": {
+        "tags": ["Recommendations"],
+        "summary": "Estatísticas de feedback",
+        "description": "Retorna análise de padrões de likes/dislikes por contexto",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Estatísticas de feedback",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "totalLikes": {
+                      "type": "integer"
+                    },
+                    "totalDislikes": {
+                      "type": "integer"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/recommendations/{playlistId}": {
+      "get": {
+        "tags": ["Recommendations"],
+        "summary": "Detalhes da playlist",
+        "description": "Retorna informações completas de uma playlist incluindo todas as faixas",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "playlistId",
+            "in": "path",
+            "required": true,
+            "description": "ID da playlist",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Detalhes da playlist",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RecommendationResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Playlist não encontrada"
+          }
+        }
+      },
+      "delete": {
+        "tags": ["Recommendations"],
+        "summary": "Deletar playlist",
+        "description": "Remove uma playlist criada pelo usuário",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "playlistId",
+            "in": "path",
+            "required": true,
+            "description": "ID da playlist",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Playlist deletada com sucesso"
+          },
+          "404": {
+            "description": "Playlist não encontrada"
+          },
+          "403": {
+            "description": "Não autorizado a deletar esta playlist"
+          }
+        }
+      }
+    }
+  },
+  "tags": [
+    {
+      "name": "Auth",
+      "description": "Autenticação e Login"
+    },
+    {
+      "name": "Users",
+      "description": "Gerenciamento de Usuários"
+    },
+    {
+      "name": "Recommendations",
+      "description": "Recomendações de Músicas"
+    }
+  ]
+}

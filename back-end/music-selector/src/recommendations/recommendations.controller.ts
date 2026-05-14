@@ -10,6 +10,7 @@ import {
   Logger,
   Delete,
 } from '@nestjs/common';
+import { ApiTags, ApiOperation, ApiResponse, ApiBearerAuth, ApiParam, ApiQuery } from '@nestjs/swagger';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { RecommendationsService } from './recommendations.service';
 import { GetRecommendationsDto } from './dto/get-recommendations.dto';
@@ -17,6 +18,8 @@ import { SaveFeedbackDto } from './dto/save-feedback.dto';
 
 @Controller('api/recommendations')
 @UseGuards(JwtAuthGuard)
+@ApiTags('Recommendations')
+@ApiBearerAuth()
 export class RecommendationsController {
   private readonly logger = new Logger(RecommendationsController.name);
 
@@ -27,6 +30,34 @@ export class RecommendationsController {
    * RN17-RN22: Gerar recomendações sob demanda
    */
   @Post('generate')
+  @ApiOperation({
+    summary: 'Gerar recomendações sob demanda',
+    description: 'RN17-RN22: Cria vibe customizada com Objetivo + Energia + Humor. Retorna 10 faixas ordenadas por relevância',
+  })
+  @ApiResponse({
+    status: 200,
+    description: 'Recomendações geradas com sucesso',
+    schema: {
+      example: {
+        playlistId: 'uuid',
+        playlistName: 'My Vibe',
+        objective: 'FOCUS',
+        mood: 'HAPPY',
+        energyLevel: 'HIGH',
+        generatedAt: '2026-05-14T12:00:00Z',
+        tracks: [
+          {
+            id: 'spotify_id',
+            title: 'Song Name',
+            artist: 'Artist Name',
+            features: { energy: 0.75, valence: 0.65, danceability: 0.7 },
+          },
+        ],
+        totalTracks: 10,
+      },
+    },
+  })
+  @ApiResponse({ status: 401, description: 'Token inválido ou expirado' })
   async getRecommendations(
     @Request() req,
     @Body() dto: GetRecommendationsDto,
@@ -42,6 +73,15 @@ export class RecommendationsController {
    * RN10, RN14-RN15: Gerar Vibe Diária automática
    */
   @Get('daily-vibe')
+  @ApiOperation({
+    summary: 'Gerar Vibe Diária',
+    description: 'RN10, RN14-RN15: Recomendação automática recalculada a cada 24h baseada no perfil do usuário',
+  })
+  @ApiResponse({
+    status: 200,
+    description: 'Vibe diária gerada com sucesso',
+  })
+  @ApiResponse({ status: 401, description: 'Não autenticado' })
   async getDailyVibe(@Request() req) {
     this.logger.log(`Gerando vibe diária para usuário ${req.user.id}`);
     return this.recommendationsService.generateDailyVibe(req.user.id);
@@ -52,6 +92,15 @@ export class RecommendationsController {
    * RN14-RN15: Recuperar Vibes Diárias (playlists automáticas)
    */
   @Get('vibes')
+  @ApiOperation({
+    summary: 'Listar Vibes Diárias',
+    description: 'RN14-RN15: Retorna histórico de vibes diárias do usuário',
+  })
+  @ApiResponse({
+    status: 200,
+    description: 'Lista de vibes diárias',
+    isArray: true,
+  })
   async getUserDailyVibes(@Request() req) {
     this.logger.log(`Recuperando vibes diárias do usuário ${req.user.id}`);
     return this.recommendationsService.getUserDailyVibes(req.user.id);
@@ -62,6 +111,21 @@ export class RecommendationsController {
    * RN14: Recuperar histórico de playlists
    */
   @Get('history')
+  @ApiOperation({
+    summary: 'Histórico de playlists',
+    description: 'RN14: Retorna lista paginada de playlists criadas pelo usuário',
+  })
+  @ApiQuery({
+    name: 'limit',
+    required: false,
+    type: Number,
+    description: 'Limite de resultados (padrão: 10)',
+  })
+  @ApiResponse({
+    status: 200,
+    description: 'Histórico de playlists',
+    isArray: true,
+  })
   async getPlaylistHistory(
     @Request() req,
     @Query('limit') limit?: number,
@@ -75,6 +139,21 @@ export class RecommendationsController {
    * Recuperar histórico de feedback do usuário
    */
   @Get('feedback')
+  @ApiOperation({
+    summary: 'Histórico de feedback',
+    description: 'RN23-RN24: Retorna histórico de likes/dislikes do usuário',
+  })
+  @ApiQuery({
+    name: 'limit',
+    required: false,
+    type: Number,
+    description: 'Limite de resultados (padrão: 50)',
+  })
+  @ApiResponse({
+    status: 200,
+    description: 'Histórico de feedback',
+    isArray: true,
+  })
   async getUserFeedback(
     @Request() req,
     @Query('limit') limit?: number,
@@ -88,6 +167,21 @@ export class RecommendationsController {
    * Recuperar estatísticas de feedback
    */
   @Get('feedback/stats')
+  @ApiOperation({
+    summary: 'Estatísticas de feedback',
+    description: 'Retorna análise de padrões de likes/dislikes por contexto',
+  })
+  @ApiResponse({
+    status: 200,
+    description: 'Estatísticas de feedback',
+    schema: {
+      example: {
+        totalLikes: 42,
+        totalDislikes: 8,
+        likesByObjective: { FOCUS: 20, RELAX: 15, WORKOUT: 7 },
+      },
+    },
+  })
   async getUserFeedbackStats(@Request() req) {
     this.logger.log(`Recuperando estatísticas de feedback do usuário ${req.user.id}`);
     return this.recommendationsService.getUserFeedbackStats(req.user.id);
@@ -98,6 +192,25 @@ export class RecommendationsController {
    * RN23-RN24: Registrar feedback (like/dislike)
    */
   @Post('feedback')
+  @ApiOperation({
+    summary: 'Registrar feedback de música',
+    description: 'RN23-RN24: Registra like/dislike e bloqueia música em contexto (dislike). Melhora futuras recomendações',
+  })
+  @ApiResponse({
+    status: 201,
+    description: 'Feedback registrado com sucesso',
+    schema: {
+      example: {
+        id: 'feedback_uuid',
+        userId: 'user_uuid',
+        trackId: 'track_uuid',
+        reaction: 'LIKE',
+        objectiveContext: 'FOCUS',
+        createdAt: '2026-05-14T12:00:00Z',
+      },
+    },
+  })
+  @ApiResponse({ status: 400, description: 'Dados de feedback inválidos' })
   async recordFeedback(
     @Request() req,
     @Body() dto: SaveFeedbackDto,
@@ -118,6 +231,19 @@ export class RecommendationsController {
    * Recuperar detalhes de uma playlist específica
    */
   @Get(':playlistId')
+  @ApiParam({
+    name: 'playlistId',
+    description: 'ID da playlist',
+  })
+  @ApiOperation({
+    summary: 'Detalhes da playlist',
+    description: 'Retorna informações completas de uma playlist incluindo todas as faixas',
+  })
+  @ApiResponse({
+    status: 200,
+    description: 'Detalhes da playlist',
+  })
+  @ApiResponse({ status: 404, description: 'Playlist não encontrada' })
   async getPlaylistDetails(
     @Request() req,
     @Param('playlistId') playlistId: string,
@@ -131,6 +257,20 @@ export class RecommendationsController {
    * Deletar uma playlist específica
    */
   @Delete(':playlistId')
+  @ApiParam({
+    name: 'playlistId',
+    description: 'ID da playlist',
+  })
+  @ApiOperation({
+    summary: 'Deletar playlist',
+    description: 'Remove uma playlist criada pelo usuário',
+  })
+  @ApiResponse({
+    status: 200,
+    description: 'Playlist deletada com sucesso',
+  })
+  @ApiResponse({ status: 404, description: 'Playlist não encontrada' })
+  @ApiResponse({ status: 403, description: 'Não autorizado a deletar esta playlist' })
   async deletePlaylist(
     @Request() req,
     @Param('playlistId') playlistId: string,
