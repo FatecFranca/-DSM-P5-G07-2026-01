@@ -166,7 +166,7 @@ Para mais detalhes sobre a arquitetura, fluxos e especificações técnicas, con
 ## 👥 Contribuidores
 
 Projeto desenvolvido como **Projeto Integrador** do 5º semestre - Fatec
-Integrantes: Vinicius de Araújo Silva, Paulo Ricardo Alvino Azevedo, Thiago Cunha Archete 
+Integrantes: Vinicius de Araújo Silva, Paulo Ricardo Alvino Azevedo, Thiago Cunha Archete.
       
 ---
 
