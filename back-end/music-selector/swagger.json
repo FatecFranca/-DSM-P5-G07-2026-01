@@ -110,7 +110,7 @@
         "properties": {
           "objective": {
             "type": "string",
-            "enum": ["FOCUS", "RELAX", "WORKOUT", "PARTY"],
+            "enum": ["FOCUS", "WORKOUT", "RELAX", "MOOD_BOOST"],
             "example": "FOCUS"
           },
           "mood": {
@@ -216,7 +216,7 @@
           },
           "objectiveContext": {
             "type": "string",
-            "enum": ["FOCUS", "RELAX", "WORKOUT", "PARTY"],
+            "enum": ["FOCUS", "WORKOUT", "RELAX", "MOOD_BOOST"],
             "example": "FOCUS"
           }
         }
@@ -236,7 +236,7 @@
           },
           "audioPreference": {
             "type": "string",
-            "enum": ["VOCAL", "INSTRUMENTAL"],
+            "enum": ["VOCAL", "INSTRUMENTAL", "MIXED"],
             "example": "VOCAL"
           }
         }
@@ -563,9 +563,17 @@
         "tags": ["Users"],
         "summary": "Logout",
         "description": "Encerra a sessão do usuário",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
         "responses": {
           "200": {
             "description": "Logout bem-sucedido"
+          },
+          "401": {
+            "description": "Não autenticado"
           }
         }
       }
