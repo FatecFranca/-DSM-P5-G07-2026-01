@@ -26,13 +26,13 @@ http://localhost:3000/api/docs
 | POST | `/users/login` | Login de usuário | ❌ |
 | POST | `/users/forgot-password` | Solicitar reset de senha | ❌ |
 | POST | `/users/reset-password` | Resetar senha | ❌ |
-| POST | `/users/{id}/onboarding` | Completar onboarding | ❌ |
-| PATCH | `/users/{id}` | Atualizar perfil | ❌ |
-| DELETE | `/users/{id}` | Deletar conta (soft delete) | ❌ |
-| DELETE | `/users/{id}/hard` | Hard delete permanente | ❌ |
-| POST | `/users/logout` | Logout | ❌ |
+| POST | `/users/{id}/onboarding` | Completar onboarding | ✅ |
+| PATCH | `/users/{id}` | Atualizar perfil | ✅ |
+| DELETE | `/users/{id}` | Deletar conta (soft delete) | ✅ |
+| DELETE | `/users/{id}/hard` | Hard delete permanente | ✅ |
+| POST | `/users/logout` | Logout | ✅ |
 | GET | `/users` | Listar todos (dev only) | ❌ |
-| GET | `/users/{id}` | Obter dados do usuário | ❌ |
+| GET | `/users/{id}` | Obter dados do usuário | ✅ |
 
 ---
 
@@ -116,6 +116,57 @@ Content-Type: application/json
 }
 ```
 
+**AudioPreference disponíveis:** `VOCAL`, `INSTRUMENTAL`, `MIXED`
+
+--# 9️⃣ **Atualizar Perfil**
+
+```bash
+PATCH /users/{userId}
+Authorization: Bearer {access_token}
+Content-Type: application/json
+
+{
+  "name": "Novo Nome"
+}
+```
+
+---
+
+### 5️⃣ **Logout**
+
+```bash
+POST /users/logout
+Authorization: Bearer {access_token}
+```
+
+---
+
+### 6️⃣ **Deletar Conta (Soft Delete - LGPD)**
+
+```bash
+DELETE /users/{userId}
+Authorization: Bearer {access_token}
+```
+
+Anonimiza o histórico de feedback do usuário.
+
+---
+
+### 7️⃣ **Hard Delete (Permanente)**
+
+```bash
+DELETE /users/{userId}/hard
+Authorization: Bearer {access_token}
+```
+
+Remove completamente o usuário e todos os dados.
+
+---
+
+## 🎵 Recomendações
+
+### 8️⃣ **Gerar Recomendações Sob Demanda**
+
 ---
 
 ## 🎵 Recomendações
@@ -137,9 +188,10 @@ Content-Type: application/json
 
 **Enums disponíveis:**
 
-- **Objective**: `FOCUS`, `RELAX`, `WORKOUT`, `PARTY`
+- **Objective**: `FOCUS`, `RELAX`, `WORKOUT`, `MOOD_BOOST`
 - **Mood**: `HAPPY`, `NEUTRAL`, `ANXIOUS`, `SAD`
 - **EnergyLevel**: `LOW`, `MEDIUM`, `HIGH`
+- **AudioPreference**: `VOCAL`, `INSTRUMENTAL`, `MIXED`
 
 **Resposta (200):**
 ```json
@@ -177,7 +229,7 @@ Content-Type: application/json
 
 ### 5️⃣ **Gerar Vibe Diária**
 
-```bash
+```b🔟
 GET /api/recommendations/daily-vibe
 Authorization: Bearer {access_token}
 ```
@@ -188,14 +240,14 @@ Retorna recomendações automáticas recalculadas a cada 24h baseadas no perfil 
 
 ### 6️⃣ **Listar Histórico de Playlists**
 
-```bash
+```b1️⃣1sh
 GET /api/recommendations/history?limit=10
 Authorization: Bearer {access_token}
 ```
 
 ---
 
-### 7️⃣ **Registrar Feedback (Like/Dislike)**
+### 1️⃣2️⃣ **Registrar Feedback (Like/Dislike)**
 
 ```bash
 POST /api/recommendations/feedback
@@ -215,7 +267,7 @@ Content-Type: application/json
 
 ---
 
-### 8️⃣ **Obter Estatísticas de Feedback**
+### 1️⃣3️⃣ **Obter Estatísticas de Feedback**
 
 ```bash
 GET /api/recommendations/feedback/stats
