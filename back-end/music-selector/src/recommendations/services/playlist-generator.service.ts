@@ -4,6 +4,7 @@ import { GetRecommendationsDto } from '../dto/get-recommendations.dto';
 import { MLService } from './ml.service';
 import { PlaylistService } from './playlist.service';
 import { FeedbackService } from './feedback.service';
+import type { TrackModel } from '../../generated/prisma/models/Track';
 
 /**
  * PlaylistGeneratorService: Lógica de geração de playlists
@@ -85,10 +86,10 @@ export class PlaylistGeneratorService {
         );
       }
 
-      const trackById = new Map(tracks.map((track) => [track.id, track]));
+      const trackById = new Map<string, TrackModel>(tracks.map((track) => [track.id, track]));
       const rankedCandidates = (mlRecommendations.trackIds || [])
         .map((trackId, index) => {
-          const track = trackById.get(trackId);
+          const track = trackById.get(trackId) as TrackModel | undefined;
           if (!track) {
             return null;
           }
@@ -100,7 +101,7 @@ export class PlaylistGeneratorService {
 
           return { track, score, index };
         })
-        .filter(Boolean) as Array<{ track: any; score: number; index: number }>;
+        .filter(Boolean) as Array<{ track: TrackModel; score: number; index: number }>;
 
       if (rankedCandidates.length < targetCount) {
         throw new BadRequestException(
@@ -229,10 +230,10 @@ export class PlaylistGeneratorService {
         throw new BadRequestException('Nenhuma track disponível para hoje');
       }
 
-      const trackById = new Map(tracks.map((track) => [track.id, track]));
+      const trackById = new Map<string, TrackModel>(tracks.map((track) => [track.id, track]));
       const rankedCandidates = (mlRecommendations.trackIds || [])
         .map((trackId, index) => {
-          const track = trackById.get(trackId);
+          const track = trackById.get(trackId) as TrackModel | undefined;
           if (!track) {
             return null;
           }
@@ -244,7 +245,7 @@ export class PlaylistGeneratorService {
 
           return { track, score, index };
         })
-        .filter(Boolean) as Array<{ track: any; score: number; index: number }>;
+        .filter(Boolean) as Array<{ track: TrackModel; score: number; index: number }>;
 
       if (rankedCandidates.length < targetCount) {
         throw new BadRequestException('Nenhuma track disponível para hoje');
