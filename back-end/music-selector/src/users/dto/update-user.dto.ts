@@ -6,10 +6,15 @@ import {
   IsNotEmpty,
   ValidateIf,
 } from 'class-validator';
+import { ApiProperty } from '@nestjs/swagger';
 import { MatchProperty } from '../../common/validators/match-property.validator';
 
 export class UpdateUserDto {
-  // RN26: Nome editável
+  @ApiProperty({
+    example: 'João Silva',
+    description: 'Nome do usuário (máx 50 chars)',
+    required: false,
+  })
   @IsOptional()
   @IsString({ message: 'Nome deve ser uma string' })
   @Length(1, 50, { message: 'Nome deve ter entre 1 e 50 caracteres' })
@@ -18,7 +23,11 @@ export class UpdateUserDto {
   })
   name?: string;
 
-  // RN26: Senha editável com validação de força
+  @ApiProperty({
+    example: 'NovaSenha456',
+    description: 'Nova senha (8+ chars, letra + número)',
+    required: false,
+  })
   @IsOptional()
   @IsString({ message: 'Senha deve ser uma string' })
   @Length(8, 128, { message: 'Senha deve ter no mínimo 8 caracteres' })
@@ -26,21 +35,34 @@ export class UpdateUserDto {
   @Matches(/\d/, { message: 'Senha deve conter pelo menos um número' })
   password?: string;
 
-  // RN26: Confirmação de Senha
+  @ApiProperty({
+    example: 'NovaSenha456',
+    description: 'Confirmação da nova senha',
+    required: false,
+  })
   @IsOptional()
   @ValidateIf((dto) => dto.password !== undefined)
   @IsNotEmpty({ message: 'Confirmação de senha é obrigatória' })
   @MatchProperty('password', { message: 'Senhas não correspondem' })
   passwordConfirmation?: string;
 
-  // RN27: Gêneros editáveis
+  @ApiProperty({
+    example: 'rock,indie,jazz',
+    description: 'Gêneros favoritos (1-5, separados por vírgula)',
+    required: false,
+  })
   @IsOptional()
   @Matches(/^[a-zA-Z0-9_-]+(,[a-zA-Z0-9_-]+){0,4}$/, {
     message: 'Máximo 5 gêneros separados por vírgula (sem espaços)',
   })
   favoriteGenres?: string;
 
-  // RN27: Preferência de áudio editável
+  @ApiProperty({
+    example: 'vocal',
+    description: 'Preferência de áudio (instrumental, mixed ou vocal)',
+    enum: ['instrumental', 'mixed', 'vocal'],
+    required: false,
+  })
   @IsOptional()
   @Matches(/^(instrumental|mixed|vocal)$/i, {
     message: 'Preferência deve ser: instrumental, mixed ou vocal',

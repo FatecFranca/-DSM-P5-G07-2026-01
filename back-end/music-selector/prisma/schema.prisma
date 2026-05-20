@@ -33,6 +33,23 @@ model User {
 }
 
 // ─────────────────────────────────────────
+// PASSWORD RESET TOKEN
+// ─────────────────────────────────────────
+
+model PasswordResetToken {
+  id        String   @id @default(cuid())
+  email     String   @db.VarChar(100)
+  token     String   @unique  // Hash do token enviado por email
+  expiresAt DateTime @map("expires_at")
+  usedAt    DateTime? @map("used_at")  // Para auditoria LGPD
+  createdAt DateTime @default(now()) @map("created_at")
+
+  @@index([email])
+  @@index([expiresAt])
+  @@map("password_reset_tokens")
+}
+
+// ─────────────────────────────────────────
 // ONBOARDING
 // ─────────────────────────────────────────
 

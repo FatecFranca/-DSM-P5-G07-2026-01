@@ -5,6 +5,8 @@ import { AuthService } from '../auth/auth.service';
 import { CreateUserDto } from './dto/create-user.dto';
 import { UpdateUserDto } from './dto/update-user.dto';
 import { CompleteOnboardingDto } from './dto/complete-onboarding.dto';
+import { RequestPasswordResetDto } from './dto/request-password-reset.dto';
+import { ResetPasswordDto } from './dto/reset-password.dto';
 
 @Controller('users')
 @ApiTags('Users')
@@ -66,29 +68,36 @@ export class UsersController {
   @HttpCode(200)
   @ApiOperation({
     summary: 'Solicitar reset de senha',
-    description: 'RN08: Envia link de reset de senha para o email (segurança: não revela se email existe)',
+    description: 'RN08: Gera token temporário e envia link de reset por email. Não revela se email existe (segurança).',
   })
   @ApiResponse({
     status: 200,
-    description: 'Email de reset enviado (ou simulado)',
+    description: 'Se o email existir, um link foi enviado',
+    schema: {
+      example: { message: 'Se o email existir, um link de reset foi enviado' },
+    },
   })
-  async forgotPassword(@Body() { email }: { email: string }) {
-    return this.usersService.requestPasswordReset(email);
+  @ApiResponse({ status: 400, description: 'Email inválido' })
+  async forgotPassword(@Body() dto: RequestPasswordResetDto) {
+    return this.usersService.requestPasswordReset(dto.email);
   }
 
   @Post('reset-password')
   @HttpCode(200)
   @ApiOperation({
     summary: 'Resetar senha',
-    description: 'RNF-S03: Reseta a senha com novo hash BCrypt',
+    description: 'RNF-S03: Valida token de reset enviado por email e atualiza senha com novo hash BCrypt. Token expira em 1 hora.',
   })
   @ApiResponse({
     status: 200,
     description: 'Senha resetada com sucesso',
+    schema: {
+      example: { message: 'Senha resetada com sucesso. Faça login com sua nova senha.' },
+    },
   })
-  @ApiResponse({ status: 400, description: 'Senhas não correspondem' })
-  async resetPassword(@Body() body: { token: string; password: string; passwordConfirmation: string }) {
-    return this.usersService.resetPassword(body.token, body.password, body.passwordConfirmation);
+  @ApiResponse({ status: 400, description: 'Token inválido, expirado ou senhas não correspondem' })
+  async resetPassword(@Body() dto: ResetPasswordDto) {
+    return this.usersService.resetPassword(dto.token, dto.password, dto.passwordConfirmation);
   }
 
   @Post(':id/onboarding')

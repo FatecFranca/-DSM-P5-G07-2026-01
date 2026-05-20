@@ -80,6 +80,10 @@ export class PrismaService implements OnModuleInit, OnModuleDestroy {
     return this.prismaClient.playlistTrack;
   }
 
+  get passwordResetToken() {
+    return this.prismaClient.passwordResetToken;
+  }
+
   get $connect() {
     return this.prismaClient.$connect.bind(this.prismaClient);
   }

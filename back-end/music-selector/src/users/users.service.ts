@@ -2,11 +2,16 @@
 import { PrismaService } from '../prisma/prisma.service';
 import { CreateUserDto } from './dto/create-user.dto';
 import { UpdateUserDto } from './dto/update-user.dto';
+import { EmailService } from './services/email.service';
 import * as bcrypt from 'bcrypt';
+import { randomBytes } from 'crypto';
 
 @Injectable()
 export class UsersService {
-  constructor(private prisma: PrismaService) {}
+  constructor(
+    private prisma: PrismaService,
+    private emailService: EmailService,
+  ) {}
 
   /**
    * RN01-RN06: Criar novo usuário com validações
@@ -66,28 +71,123 @@ export class UsersService {
 
   /**
    * RN08: Solicitar reset de senha
-   * Validar email antes de enviar link
+   * Gera token temporário e envia email
+   * Não revela se email existe (segurança)
    */
   async requestPasswordReset(email: string) {
-    const user = await this.findByEmail(email);
-    if (!user) {
-      // Não revelar se email existe ou não (segurança)
-      return { message: 'Se o email existe, um link foi enviado' };
+    try {
+      // Verificar se email existe (mas não revelar)
+      const user = await this.findByEmail(email);
+      if (!user) {
+        // Retornar mensagem genérica por segurança
+        return { message: 'Se o email existir, um link de reset foi enviado' };
+      }
+
+      // Gerar token aleatório seguro (32 bytes = 64 caracteres hex)
+      const rawToken = randomBytes(32).toString('hex');
+      const tokenHash = await bcrypt.hash(rawToken, 10);
+
+      // Salvar token no banco com expiração de 1 hora
+      const expiresAt = new Date(Date.now() + 60 * 60 * 1000); // 1 hora
+      await this.prisma.passwordResetToken.create({
+        data: {
+          email,
+          token: tokenHash,
+          expiresAt,
+        },
+      });
+
+      // Construir link de reset (frontend URL)
+      const resetLink = `${process.env.FRONTEND_URL || 'http://localhost:3000'}/reset-password?token=${rawToken}`;
+
+      // Enviar email
+      await this.emailService.sendPasswordResetEmail(email, resetLink);
+
+      return { message: 'Se o email existir, um link de reset foi enviado' };
+    } catch (error: any) {
+      throw new InternalServerErrorException('Erro ao solicitar reset de senha');
     }
-    // TODO: Implementar geração de token temporário e envio de email
-    return { message: 'Link de reset enviado para o email' };
   }
 
   /**
-   * RNF-S03: Reset de senha com hash
+   * RNF-S03: Validar token de reset e resetar senha
    */
   async resetPassword(token: string, password: string, passwordConfirmation: string) {
-    // TODO: Validar token e sua expiração
-    // Por agora apenas simulado
-    if (password !== passwordConfirmation) {
-      throw new BadRequestException('Senhas não correspondem');
+    try {
+      if (password !== passwordConfirmation) {
+        throw new BadRequestException('Senhas não correspondem');
+      }
+
+      // Encontrar token não expirado
+      const resetTokens = await this.prisma.passwordResetToken.findMany({
+        where: {
+          expiresAt: { gt: new Date() }, // Não expirado
+          usedAt: null, // Não foi usado
+        },
+      });
+
+      // Validar token contra os hashes
+      let validToken: typeof resetTokens[0] | null = null;
+      for (const tokenRecord of resetTokens) {
+        const isValid = await bcrypt.compare(token, tokenRecord.token);
+        if (isValid) {
+          validToken = tokenRecord;
+          break;
+        }
+      }
+
+      if (!validToken) {
+        throw new BadRequestException('Token de reset inválido ou expirado');
+      }
+
+      // Encontrar usuário pelo email do token
+      const user = await this.findByEmail(validToken.email);
+      if (!user) {
+        throw new BadRequestException('Usuário não encontrado');
+      }
+
+      // Hash da nova senha
+      const passwordHash = await bcrypt.hash(password, 10);
+
+      // Atualizar senha do usuário
+      await this.prisma.user.update({
+        where: { id: (user as any).id },
+        data: { passwordHash },
+      });
+
+      // Marcar token como usado (auditoria LGPD)
+      await this.prisma.passwordResetToken.update({
+        where: { id: validToken.id },
+        data: { usedAt: new Date() },
+      });
+
+      // Enviar confirmação de reset
+      await this.emailService.sendPasswordResetConfirmation(validToken.email);
+
+      return { message: 'Senha resetada com sucesso. Faça login com sua nova senha.' };
+    } catch (error: any) {
+      if (error instanceof BadRequestException) {
+        throw error;
+      }
+      throw new InternalServerErrorException('Erro ao resetar senha');
     }
-    return { message: 'Senha resetada com sucesso' };
+  }
+
+  /**
+   * Limpar tokens de reset expirados (para manutenção)
+   * Pode ser executado por job/scheduler
+   */
+  async cleanExpiredResetTokens() {
+    try {
+      const result = await this.prisma.passwordResetToken.deleteMany({
+        where: {
+          expiresAt: { lt: new Date() },
+        },
+      });
+      return { deletedCount: result.count };
+    } catch (error: any) {
+      throw new InternalServerErrorException('Erro ao limpar tokens expirados');
+    }
   }
 
   /**
