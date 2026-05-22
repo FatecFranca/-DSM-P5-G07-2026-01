@@ -31,7 +31,7 @@ http://localhost:3000/api/docs
 | POST | `/users/logout` | Logout | ✅ |
 | DELETE | `/users/{id}` | Deletar conta (soft delete - LGPD) | ✅ |
 | DELETE | `/users/{id}/hard` | Hard delete permanente | ✅ |
-| GET | `/users` | Listar todos (dev only) | ❌ |
+| GET | `/users` | Listar todos (admin only) | ✅ Admin |
 
 ---
 
@@ -87,7 +87,7 @@ Content-Type: application/json
 
 ---
 
-### 2️⃣ **Login** 🔓 **(Sem Autenticação)**
+### 2️⃣ **Login** 🔓
 
 ```bash
 POST /auth/login
@@ -117,7 +117,7 @@ Content-Type: application/json
 
 ---
 
-### 3️⃣ **Esqueci Minha Senha** 🔓 **(Sem Autenticação)**
+### 3️⃣ **Esqueci Minha Senha** 🔓
 
 ```bash
 POST /auth/forgot-password
@@ -139,7 +139,7 @@ Content-Type: application/json
 
 ---
 
-### 4️⃣ **Resetar Senha** 🔓 **(Sem Autenticação)**
+### 4️⃣ **Resetar Senha** 🔓
 
 ```bash
 POST /auth/reset-password
@@ -185,6 +185,17 @@ Content-Type: application/json
 ---
 
 ### 6️⃣ **Atualizar Perfil** 🔐
+
+```bash
+PATCH /users/{userId}
+Authorization: Bearer {access_token}
+Content-Type: application/json
+
+{
+  "name": "João Silva Santos"
+}
+```
+
 **Restrições (RN26):**
 - Nome editável (máx 50 caracteres)
 - Email e Data de Nascimento **imutáveis**
@@ -252,12 +263,12 @@ Authorization: Bearer {access_token}
 ---
 
 ### 🔟 **Hard Delete - Permanente** 🔐
-Parâmetros (RN17-RN20):**
 
-- **Objective** (obrigatório): `FOCUS`, `RELAX`, `WORKOUT`, `MOOD_BOOST`
-- **Mood** (obrigatório): `HAPPY`, `NEUTRAL`, `ANXIOUS`, `SAD`
-- **EnergyLevel** (obrigatório): `LOW`, `MEDIUM`, `HIGH`
-- **limit** (opcional): 1-50, padrão 10
+```bash
+DELETE /users/{userId}/hard
+Authorization: Bearer {access_token}
+```
+
 **Resposta (200):**
 ```json
 {
@@ -271,7 +282,7 @@ Parâmetros (RN17-RN20):**
 
 ## 🎵 Recomendações
 
-### 1️⃣1️⃣ **Gerar Recomendações Sob Demanda** 🔐
+### 11 **Gerar Recomendações Sob Demanda** 🔐
 
 ```bash
 POST /api/recommendations/generate
@@ -285,9 +296,48 @@ Content-Type: application/json
   "limit": 10
 }
 ```
+
+**Parâmetros (RN17-RN20):**
+- **Objective** (obrigatório): `FOCUS`, `RELAX`, `WORKOUT`, `MOOD_BOOST`
+- **Mood** (obrigatório): `HAPPY`, `NEUTRAL`, `ANXIOUS`, `SAD`
+- **EnergyLevel** (obrigatório): `LOW`, `MEDIUM`, `HIGH`
+- **limit** (opcional): 1-50, padrão 20
+
+**Resposta (200):**
+```json
+{
+  "playlistId": "uuid",
+  "playlistName": "Foco Total - Feliz",
+  "objective": "FOCUS",
+  "mood": "HAPPY",
+  "energyLevel": "HIGH",
+  "generatedAt": "2026-05-18T12:00:00Z",
+  "tracks": [
+    {
+      "id": "track_1",
+      "title": "Song Name",
+      "artist": "Artist Name",
+      "album": "Album",
+      "genre": "Rock",
+      "popularity": 85,
+      "features": {
+        "energy": 0.8,
+        "valence": 0.9,
+        "danceability": 0.7,
+        "acousticness": 0.1,
+        "instrumentalness": 0.05,
+        "tempo": 120
+      },
+      "explanation": "Recomendada por: ritmo energético perfeito para exercício"
+    }
+  ],
+  "totalTracks": 10
+}
+```
+
 ---
 
-### 1️⃣2️⃣ **Gerar Vibe Diária** 🔐
+### 12 **Gerar Vibe Diária** 🔐
 
 ```bash
 GET /api/recommendations/daily-vibe
@@ -299,10 +349,11 @@ Authorization: Bearer {access_token}
 **Regra (RN14-RN15):**
 - Recomendações automáticas baseadas no perfil do usuário
 - Recalculadas a cada 24 horas
+- Objetivo e mood determinados automaticamente por horário do dia
 
 ---
 
-### 1️⃣3️⃣ **Listar Vibes Diárias** 🔐
+### 13 **Listar Vibes Diárias** 🔐
 
 ```bash
 GET /api/recommendations/vibes
@@ -314,7 +365,72 @@ Authorization: Bearer {access_token}
 [
   {
     "playlistId": "uuid_1",
-    "playlistName": "Foco",
+    "playlistName": "Vibe Diária - 18/05/2026",
+    "objective": "FOCUS",
+    "energyLevel": "MEDIUM",
+    "generatedAt": "2026-05-18T00:00:00Z",
+    "tracks": [ ... ]
+  }
+]
+```
+
+---
+
+### 14 **Histórico de Playlists** 🔐
+
+```bash
+GET /api/recommendations/history?limit=10
+Authorization: Bearer {access_token}
+```
+
+**Query Parameters:**
+- `limit` (opcional): Número de resultados, padrão 10
+
+**Resposta (200):** Array de playlists do usuário ordenadas por data
+
+---
+
+### 15 **Obter Detalhes da Playlist** 🔐
+
+```bash
+GET /api/recommendations/{playlistId}
+Authorization: Bearer {access_token}
+```
+
+**Resposta (200):** Detalhes completos da playlist com todas as tracks
+
+---
+
+### 16 **Deletar Playlist** 🔐
+
+```bash
+DELETE /api/recommendations/{playlistId}
+Authorization: Bearer {access_token}
+```
+
+**Resposta (200):**
+```json
+{
+  "message": "Playlist deletada com sucesso"
+}
+```
+
+---
+
+### 17 **Registrar Feedback (Like/Dislike)** 🔐
+
+```bash
+POST /api/recommendations/feedback
+Authorization: Bearer {access_token}
+Content-Type: application/json
+
+{
+  "trackId": "spotify_track_id",
+  "reaction": "LIKE",
+  "objectiveContext": "FOCUS"
+}
+```
+
 **Parâmetros (RN23):**
 - **trackId** (obrigatório): ID da música
 - **reaction** (obrigatório): `LIKE` ou `DISLIKE`
@@ -335,7 +451,7 @@ Authorization: Bearer {access_token}
 
 ---
 
-### 1️⃣8️⃣ **Histórico de Feedback** 🔐
+### 18 **Histórico de Feedback** 🔐
 
 ```bash
 GET /api/recommendations/feedback?limit=50
@@ -349,7 +465,7 @@ Authorization: Bearer {access_token}
 
 ---
 
-### 1️⃣9️⃣ **Estatísticas de Feedback** 🔐
+### 19 **Estatísticas de Feedback** 🔐
 
 ```bash
 GET /api/recommendations/feedback/stats
@@ -384,106 +500,6 @@ Authorization: Bearer {access_token}
 
 - **Login & Register** (`/auth/login`, `/auth/register`): **5 tentativas por minuto**
   - Após 5 falhas, recebe `429 Too Many Requests` (RNF-S04)
-
-### Validações
-
-- **Nome** (RNF-S01): Máximo 50 caracteres, sem números e caracteres especiais
-- **Registrar
-
-```bash
-curl -X POST http://localhost:3000/auth/register \
-  -H "Content-Type: application/json" \
-  -d '{
-    "name":"João Silva",
-    "email":"joao@example.com",
-    "emailConfirmation":"joao@example.com",
-    "password":"MyPassword123!",
-    "passwordConfirmation":"MyPassword123!",
-    "dateOfBirth":"2005-01-15"
-  
-DELETE /api/recommendations/{playlistId}
-Authorization: Bearer {access_token}
-```
-
-**Resposta (200):**
-```json
-{
-  "message": "Playlist deletada com sucesso"
-}
-```
-
----
-
-### 1️⃣7️⃣ **Registrar Feedback (Like/Dislike)** 🔐
-        "acousticness": 0.1,
-        "instrumentalness": 0.05,
-        "tempo": 120
-      }
-    }
-    // ... 10 faixas
-  ],
-  "totalTracks": 10
-}
-```
-
----
-
-### 5️⃣ **Gerar Vibe Diária**
-
-```b🔟
-GET /api/recommendations/daily-vibe
-Authorization: Bearer {access_token}
-```
-
-Retorna recomendações automáticas recalculadas a cada 24h baseadas no perfil do usuário.
-
----
-
-### 6️⃣ **Listar Histórico de Playlists**
-
-```b1️⃣1sh
-GET /api/recommendations/history?limit=10
-Authorization: Bearer {access_token}
-``` (sem auth prévia - Endpoint Público)
-- **RNF-S01-S04**: Validações e segurança
-
-### 1️⃣2️⃣ **Registrar Feedback (Like/Dislike)**
-
-```bash
-POST /api/recommendations/feedback
-Authorization: Bearer {access_token}
-Content-Type: application/json
-
-{
-  "trackId": "spotify_track_id",
-  "reaction": "LIKE",
-  "objectiveContext": "FOCUS"
-}
-```
-
-**Reações disponíveis:** `LIKE`, `DISLIKE`
-
-**Regra RN24:** Ao fazer DISLIKE, a música nunca mais é sugerida naquele contexto.
-
----
-
-### 1️⃣3️⃣ **Obter Estatísticas de Feedback**
-
-```bash
-GET /api/recommendations/feedback/stats
-Authorization: Bearer {access_token}
-```
-
-Retorna análise de padrões de likes/dislikes por contexto.
-
----
-
-## 🔒 Segurança & Rate Limiting
-
-### Rate Limit
-
-- **Login** (`/auth/login`, `/users/login`): **5 tentativas por minuto**
-  - Após 5 falhas, recebe `429 Too Many Requests`
 
 ### Validações (RNF-S01, RNF-S02, RNF-S03)
 
@@ -521,6 +537,21 @@ Se preferir usar em ferramentas como **Postman** ou **Insomnia**, importe:
 ---
 
 ## 📝 Exemplos cURL
+
+### Registrar
+
+```bash
+curl -X POST http://localhost:3000/auth/register \
+  -H "Content-Type: application/json" \
+  -d '{
+    "name":"João Silva",
+    "email":"joao@example.com",
+    "emailConfirmation":"joao@example.com",
+    "password":"MyPassword123!",
+    "passwordConfirmation":"MyPassword123!",
+    "dateOfBirth":"2005-01-15"
+  }'
+```
 
 ### Login
 
@@ -587,9 +618,9 @@ curl -X POST http://localhost:3000/api/recommendations/feedback \
 
 ### Recomendações
 - **RN14-RN15**: Vibes Diárias automáticas
-- **RN17-RN22**: 10 faixas ordenadas por relevância
+- **RN17-RN22**: 10+ faixas ordenadas por relevância
 - **RN23-RN24**: Like/Dislike bloqueia no contexto
-- **RN29-RN30**: LGPD - Soft e hard delete com anonimização
+- **RN30-RN31**: LGPD - Soft e hard delete com anonimização
 
 ---
 
@@ -598,4 +629,3 @@ curl -X POST http://localhost:3000/api/recommendations/feedback \
 1. Rodar servidor: `npm run start:dev`
 2. Acessar Swagger: `http://localhost:3000/api/docs`
 3. Testar rotas interativamente na UI
-4. Implementar ML microserviço em Python para recomendações avançadas

@@ -3,6 +3,7 @@ import { PrismaService } from '../prisma/prisma.service';
 import { CreateUserDto } from './dto/create-user.dto';
 import { UpdateUserDto } from './dto/update-user.dto';
 import { EmailService } from './services/email.service';
+import { DailyVibesJob } from '../jobs/daily-vibes.job';
 import * as bcrypt from 'bcrypt';
 import { randomBytes } from 'crypto';
 
@@ -11,6 +12,7 @@ export class UsersService {
   constructor(
     private prisma: PrismaService,
     private emailService: EmailService,
+    private dailyVibesJob: DailyVibesJob,
   ) {}
 
   /**
@@ -332,8 +334,14 @@ export class UsersService {
         });
       }
 
-      // RN28: Recalcular vibes diárias quando gêneros mudam
-      // TODO: Disparar job de recalcular Vibes
+      // RN28: Recalcular vibes diárias quando gêneros ou áudio preference mudam
+      // Disparar job de forma assíncrona (non-blocking)
+      if (dto.audioPreference || dto.favoriteGenres) {
+        this.dailyVibesJob.triggerVibeRecalculation(id).catch((err) => {
+          // Log silencioso para não bloquear a resposta
+          console.warn(`⚠️ Erro ao recalcular vibes: ${err?.message}`);
+        });
+      }
 
       return {
         message: 'Perfil atualizado com sucesso',
@@ -423,7 +431,8 @@ export class UsersService {
 
   /**
    * Listar todos os usuários (apenas admin)
-   * TODO: Adicionar autenticação/autorização
+   * ✅ PROTEGIDO: AdminGuard + JwtAuthGuard no controller
+   * RNF-S04: Acesso restrito a administradores
    */
   findAll() {
     return this.prisma.user.findMany({

@@ -181,17 +181,28 @@ curl -X POST http://localhost:3000/users/reset-password \
 
 ## 🚀 Próximos Passos
 
-### Integração de Email (TODO)
+### ✅ Integração de Email (IMPLEMENTADO)
 
-Por enquanto, `EmailService` apenas faz log. Integrar com:
+`EmailService` implementado com Nodemailer + SMTP configurável:
 
-- **SendGrid**: Mais confiável e escalável
-- **Mailgun**: Boa alternativa
-- **SMTP Local**: Simples para desenvolvimento
+**Recursos:**
+- Template HTML com branding Music Selector
+- Segurança: Link com token seguro (32 bytes)
+- Confirmação de sucesso pós-reset
+- Tratamento robusto de erros com logging
 
-**Exemplo SendGrid**:
+**Configuração via .env:**
+```env
+EMAIL_HOST=seu-smtp-host
+EMAIL_PORT=587
+EMAIL_USER=seu-email@exemplo.com
+EMAIL_PASSWORD=sua-senha
+EMAIL_FROM=noreply@musicselector.com
+```
+
+**Exemplo SendGrid (alternativa):**
 ```typescript
-// src/users/services/email.service.ts
+// Para usar SendGrid em produção:
 import * as sgMail from '@sendgrid/mail';
 
 async sendPasswordResetEmail(email: string, resetLink: string) {
@@ -205,14 +216,23 @@ async sendPasswordResetEmail(email: string, resetLink: string) {
 }
 ```
 
-### Job Scheduler (TODO)
+### ✅ Job Scheduler (IMPLEMENTADO)
 
-Limpar tokens expirados automaticamente:
+Implementado `CleanupTokensJob` com 2 cronjobs automáticos:
 
+**1. Limpeza Básica (02:00 - Diário)**
 ```typescript
-// src/jobs/cleanup-tokens.job.ts
-import { Injectable } from '@nestjs/common';
-import { Cron, CronExpression } from '@nestjs/schedule';
+// Deleta todos os tokens com expiresAt < agora
+@Cron('0 2 * * *')
+async cleanExpiredResetTokens()
+```
+
+**2. Limpeza Profunda (03:00 - Domingos)**
+```typescript
+// Mantém apenas tokens usados dos últimos 7 dias (auditoria LGPD)
+@Cron('0 3 * * 0')
+async cleanOldUsedTokens()
+```
 import { UsersService } from '../users/users.service';
 
 @Injectable()

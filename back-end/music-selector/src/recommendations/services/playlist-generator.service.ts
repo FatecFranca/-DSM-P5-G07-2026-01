@@ -23,13 +23,15 @@ export class PlaylistGeneratorService {
 
   /**
    * RN17-RN22: Gerar recomendações sob demanda
+   * Garante exatamente 10 faixas ordenadas por relevância (70%) + popularity (30%)
    */
   async generateRecommendations(
     userId: string,
     dto: GetRecommendationsDto,
   ) {
     try {
-      const targetCount = 10;
+      const targetCount = 10; // RN22: Sempre exatamente 10
+      
       // Validar usuário e onboarding
       const user = await this.prisma.user.findUnique({
         where: { id: userId },
@@ -41,20 +43,24 @@ export class PlaylistGeneratorService {
       });
 
       if (!user) {
-        throw new BadRequestException('Usuário não encontrado');
+        throw new BadRequestException('❌ Usuário não encontrado');
       }
 
       if (!user.onboardingDone) {
         throw new BadRequestException(
-          'Complete o onboarding antes de gerar recomendações personalizadas',
+          '⚠️ Complete o onboarding antes de gerar recomendações personalizadas (RN10)',
         );
       }
+
+      this.logger.log(
+        `🎯 Iniciando geração: objetivo=${dto.objective}, energia=${dto.energyLevel}, humor=${dto.mood}`,
+      );
 
       // Preparar features do usuário
       const userFeatures = this.prepareUserFeatures(user);
 
-      // Chamar ML service
-      const mlRequestLimit = Math.max(targetCount * 5, dto.limit ?? 0);
+      // Chamar ML service com limite seguro (sempre pedir mais para ter margem após filtros)
+      const mlRequestLimit = Math.max(targetCount * 5, 50);
       const mlRecommendations = await this.mlService.getRecommendations({
         objective: dto.objective,
         mood: dto.mood,
@@ -63,17 +69,27 @@ export class PlaylistGeneratorService {
         limit: mlRequestLimit,
       });
 
-      // RN24: Recuperar dislikes neste contexto
+      if (!mlRecommendations.trackIds || mlRecommendations.trackIds.length === 0) {
+        throw new BadRequestException(
+          '❌ ML Service não retornou recomendações. Tente novamente.',
+        );
+      }
+
+      // RN24: Recuperar dislikes neste contexto específico
       const dislikedTrackIds = await this.feedbackService.getUserDislikes(
         userId,
         dto.objective,
+      );
+
+      this.logger.debug(
+        `🚫 Filtrando ${dislikedTrackIds.length} dislikes para contexto ${dto.objective}`,
       );
 
       // Recuperar dados das tracks e filtrar dislikes
       const tracks = await this.prisma.track.findMany({
         where: {
           id: { in: mlRecommendations.trackIds },
-          // Excluir dislikes
+          // RN24: Excluir dislikes
           NOT: {
             id: { in: dislikedTrackIds },
           },
@@ -81,12 +97,19 @@ export class PlaylistGeneratorService {
       });
 
       if (tracks.length < targetCount) {
+        this.logger.warn(
+          `⚠️ Apenas ${tracks.length} tracks disponíveis (esperado ${targetCount}). Retornando menos.`,
+        );
         throw new BadRequestException(
-          'Não há tracks suficientes para este contexto',
+          `Não há tracks suficientes para este contexto. Disponíveis: ${tracks.length}, necessários: ${targetCount}`,
         );
       }
 
-      const trackById = new Map<string, TrackModel>(tracks.map((track) => [track.id, track]));
+      // Rank e select exatamente 10 melhores
+      const trackById = new Map<string, TrackModel>(
+        tracks.map((track) => [track.id, track])
+      );
+
       const rankedCandidates = (mlRecommendations.trackIds || [])
         .map((trackId, index) => {
           const track = trackById.get(trackId) as TrackModel | undefined;
@@ -98,6 +121,108 @@ export class PlaylistGeneratorService {
             mlRecommendations.trackIds.length;
           const popularityScore = (track.popularity || 0) / 100;
           const score = relevanceScore * 0.7 + popularityScore * 0.3;
+
+          return { track, score, index };
+        })
+        .filter(Boolean) as Array<{
+        track: TrackModel;
+        score: number;
+        index: number;
+      }>;
+
+      if (rankedCandidates.length < targetCount) {
+        throw new BadRequestException(
+          `🎯 Falha crítica: apenas ${rankedCandidates.length}/${targetCount} candidatos após ranking`,
+        );
+      }
+
+      // Ordenar e selecionar exatamente 10
+      rankedCandidates.sort((a, b) => b.score - a.score || a.index - b.index);
+
+      const selectedTracks = rankedCandidates
+        .slice(0, targetCount)
+        .map((item) => item.track);
+
+      this.logger.debug(`✅ Selecionadas exatamente ${selectedTracks.length} faixas`);
+
+      // Enriquecer com features e explicações
+      const enrichedTracks = selectedTracks.map((track, index) => ({
+        id: track.id,
+        title: track.trackName,
+        artist: track.artists,
+        album: track.albumName,
+        genre: track.trackGenre,
+        popularity: track.popularity,
+        features: {
+          energy: track.energy,
+          valence: track.valence,
+          danceability: track.danceability,
+          acousticness: track.acousticness,
+          instrumentalness: track.instrumentalness,
+          tempo: track.tempo,
+        },
+        explanation: this.generateExplanation(
+          track,
+          dto.objective,
+          dto.mood,
+          dto.energyLevel,
+        ),
+        reason:
+          mlRecommendations.reasons?.[index] ||
+          'Recomendado especialmente para você',
+      }));
+
+      // Criar playlist no banco
+      const playlist = await this.playlistService.createPlaylist({
+        userId,
+        name: this.generatePlaylistName(dto.objective, dto.mood),
+        objective: dto.objective,
+        energyLevel: dto.energyLevel,
+        mood: dto.mood,
+        type: 'ON_DEMAND',
+        tracks: enrichedTracks.map((track, index) => ({
+          id: track.id,
+          position: index + 1,
+        })),
+      });
+
+      this.logger.log(
+        `🎵 ✅ Playlist criada: ${playlist.name} com ${enrichedTracks.length} faixas para ${userId}`,
+      );
+
+      // RN22: Validação final - garantir exatamente 10
+      const response = {
+        playlistId: playlist.id,
+        playlistName: playlist.name,
+        objective: dto.objective,
+        mood: dto.mood,
+        energyLevel: dto.energyLevel,
+        generatedAt: playlist.generatedAt,
+        tracks: enrichedTracks,
+        totalTracks: enrichedTracks.length,
+        mlModelScore: mlRecommendations.modelScore || undefined,
+        explanation: `Playlist "${playlist.name}" gerada com base em suas preferências (${enrichedTracks.length} faixas)`,
+      };
+
+      // Garantir invariante RN22
+      if (response.totalTracks !== 10) {
+        this.logger.error(
+          `🚨 ERRO CRÍTICO RN22: totalTracks=${response.totalTracks}, esperado 10`,
+        );
+        throw new BadRequestException(
+          `Falha na validação RN22: ${response.totalTracks} faixas ao invés de 10`,
+        );
+      }
+
+      return response;
+    } catch (error: any) {
+      this.logger.error(
+        `❌ Erro ao gerar recomendações: ${error?.message}`,
+        error.stack,
+      );
+      throw error;
+    }
+  }
 
           return { track, score, index };
         })

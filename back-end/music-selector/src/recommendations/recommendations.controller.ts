@@ -27,44 +27,67 @@ export class RecommendationsController {
 
   /**
    * POST /api/recommendations/generate
-   * RN17-RN22: Gerar recomendações sob demanda
+   * RN17-RN22: Gerar recomendações sob demanda ("Criar Minha Vibe")
+   * 
+   * Parâmetros obrigatórios:
+   * - objective: FOCUS | WORKOUT | RELAX | MOOD_BOOST
+   * - mood: HAPPY | NEUTRAL | ANXIOUS | SAD
+   * - energyLevel: LOW | MEDIUM | HIGH
+   * 
+   * Retorna exatamente 10 faixas ordenadas por (relevância 70% + popularity 30%)
    */
   @Post('generate')
   @ApiOperation({
-    summary: 'Gerar recomendações sob demanda',
-    description: 'RN17-RN22: Cria vibe customizada com Objetivo + Energia + Humor. Retorna 10 faixas ordenadas por relevância',
+    summary: 'Gerar recomendações personalizadas ("Criar Minha Vibe")',
+    description: 'RN17-RN22: Cria playlist customizada com 3 parâmetros (Objetivo + Energia + Humor). Retorna EXATAMENTE 10 faixas com DNA musical (Energy, Valence, Danceability + features técnicas)',
   })
   @ApiResponse({
     status: 200,
-    description: 'Recomendações geradas com sucesso',
+    description: 'Recomendações geradas com sucesso - 10 faixas',
     schema: {
       example: {
         playlistId: 'uuid',
-        playlistName: 'My Vibe',
+        playlistName: 'My Focus Vibe',
         objective: 'FOCUS',
         mood: 'HAPPY',
         energyLevel: 'HIGH',
-        generatedAt: '2026-05-14T12:00:00Z',
+        generatedAt: '2026-05-20T10:30:00Z',
         tracks: [
           {
-            id: 'spotify_id',
+            id: 'track-1',
             title: 'Song Name',
             artist: 'Artist Name',
-            features: { energy: 0.75, valence: 0.65, danceability: 0.7 },
+            album: 'Album Name',
+            genre: 'Electronic',
+            popularity: 75,
+            features: { energy: 0.75, valence: 0.65, danceability: 0.7, acousticness: 0.1, instrumentalness: 0.05, tempo: 120 },
+            explanation: '75% de energia, perfeito para seu foco',
+            reason: 'Sugerida por ter valência alta (motivante)',
           },
         ],
         totalTracks: 10,
+        mlModelScore: 0.89,
+        explanation: 'Playlist "My Focus Vibe" gerada com base em suas preferências',
       },
     },
   })
+  @ApiResponse({ status: 400, description: 'Parâmetros inválidos ou onboarding não completado' })
   @ApiResponse({ status: 401, description: 'Token inválido ou expirado' })
+  @ApiResponse({ status: 422, description: 'Objetivo/Energia/Humor inválidos' })
   async getRecommendations(
     @Request() req,
     @Body() dto: GetRecommendationsDto,
   ) {
     this.logger.log(
-      `Gerando recomendações para usuário ${req.user.id} com objetivo: ${dto.objective}`,
+      `🎵 Gerando recomendações para usuário ${req.user.id}: Objetivo=${dto.objective}, Energia=${dto.energyLevel}, Humor=${dto.mood}`,
     );
+    
+    // Validar que exatamente 10 faixas são solicitadas (RN22)
+    if (dto.limit !== 10 && dto.limit !== undefined) {
+      this.logger.warn(`⚠️ Tentativa de gerar ${dto.limit} faixas, forçando para 10 (RN22)`);
+      dto.limit = 10;
+    }
+    
     return this.recommendationsService.getRecommendations(req.user.id, dto);
   }
 

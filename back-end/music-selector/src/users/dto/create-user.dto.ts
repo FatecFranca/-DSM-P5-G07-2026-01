@@ -11,39 +11,47 @@ import { ApiProperty } from '@nestjs/swagger';
 import { IsMinAge } from '../../common/validators/is-min-age.validator';
 import { MatchProperty } from '../../common/validators/match-property.validator';
 
+/**
+ * RN01-RN06: DTO de Registro de Usuário
+ * Validações obrigatórias:
+ * - RN02: Email único
+ * - RN03: Senha 8+ chars (letra + número)
+ * - RN05: Idade mínima 13 anos
+ * - RNF-S01: Sanitização (50 chars max, sem números)
+ */
 export class CreateUserDto {
   @ApiProperty({
     example: 'João Silva',
-    description: 'Nome completo (máx 50 chars, sem números ou especiais)',
+    description: 'RNF-S01: Nome (50 chars max, sem números ou especiais)',
     minLength: 1,
     maxLength: 50,
   })
-  @IsNotEmpty({ message: 'Nome é obrigatório' })
-  @IsString({ message: 'Nome deve ser uma string' })
-  @Length(1, 50, { message: 'Nome deve ter entre 1 e 50 caracteres' })
+  @IsNotEmpty({ message: '❌ Nome é obrigatório' })
+  @IsString({ message: '❌ Nome deve ser texto' })
+  @Length(1, 50, { message: '❌ Nome deve ter 1-50 caracteres' })
   @Matches(/^[a-zA-ZÀ-ÿ\s]+$/, {
-    message: 'Nome não pode conter números ou caracteres especiais',
+    message: '❌ Nome: apenas letras e espaços permitidos',
   })
   name!: string;
 
   @ApiProperty({
     example: 'joao@example.com',
-    description: 'Email único do usuário',
+    description: 'RN02: Email único (100 chars max). RNF-S01: Regex validation',
     format: 'email',
     maxLength: 100,
   })
-  @IsNotEmpty({ message: 'Email é obrigatório' })
-  @IsEmail({}, { message: 'Email inválido' })
-  @Length(1, 100, { message: 'Email deve ter no máximo 100 caracteres' })
+  @IsNotEmpty({ message: '❌ Email é obrigatório' })
+  @IsEmail({}, { message: '❌ Email inválido (deve ser válido)' })
+  @Length(1, 100, { message: '❌ Email máximo 100 caracteres' })
   email!: string;
 
   @ApiProperty({
     example: 'joao@example.com',
-    description: 'Confirmação do email (deve ser idêntico ao email)',
+    description: 'RN01: Confirmação de email (deve ser idêntico)',
     format: 'email',
   })
-  @IsNotEmpty({ message: 'Confirmação de email é obrigatória' })
-  @MatchProperty('email', { message: 'Emails não correspondem' })
+  @IsNotEmpty({ message: '❌ Confirmação de email é obrigatória' })
+  @MatchProperty('email', { message: '❌ Emails não correspondem' })
   emailConfirmation!: string;
 
   @ApiProperty({
