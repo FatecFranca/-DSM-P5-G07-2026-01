@@ -8,6 +8,8 @@ import { AuthController } from './auth.controller';
 import { jwtConstants } from './constants';
 import { JwtStrategy } from './strategies/jwt.strategy';
 
+const jwtExpiration = Number(process.env.JWT_EXPIRATION) || 3600;
+
 @Module({
   imports: [
     forwardRef(() => UsersModule),
@@ -15,7 +17,7 @@ import { JwtStrategy } from './strategies/jwt.strategy';
     JwtModule.register({
       global: true,
       secret: jwtConstants.secret,
-      signOptions: { expiresIn: process.env.JWT_EXPIRATION || '3600' },
+      signOptions: { expiresIn: jwtExpiration },
     }),
   ],
   providers: [AuthService, JwtStrategy],
