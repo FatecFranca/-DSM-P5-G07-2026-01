@@ -376,13 +376,25 @@ export class UsersService {
         data: { userId: null },
       });
 
-      // RN29: Deletar conta (soft delete)
-      await this.prisma.user.delete({
+      const anonymizedEmail = `deleted_${id}@deleted.local`;
+      const anonymizedPassword = await bcrypt.hash(
+        randomBytes(16).toString('hex'),
+        10,
+      );
+
+      // RN29: Soft delete por anonimização (mantém registro para auditoria)
+      await this.prisma.user.update({
         where: { id },
+        data: {
+          name: 'Deleted User',
+          email: anonymizedEmail,
+          passwordHash: anonymizedPassword,
+          onboardingDone: false,
+        },
       });
 
       return {
-        message: 'Conta deletada permanentemente',
+        message: 'Conta deletada e anonimizada com sucesso',
       };
     } catch (error: any) {
       throw new InternalServerErrorException('Erro ao deletar conta');

@@ -2,6 +2,9 @@ import 'dotenv/config';
 import { PrismaClient } from '../src/generated/prisma/client';
 import { PrismaPg } from '@prisma/adapter-pg';
 import { Pool } from 'pg';
+import { existsSync, readFileSync } from 'fs';
+import { resolve } from 'path';
+import { parse } from 'csv-parse/sync';
 
 const prisma = new PrismaClient({
   adapter: new PrismaPg(
@@ -14,49 +17,56 @@ const prisma = new PrismaClient({
 async function main() {
   console.log('🌱 Iniciando seed do banco de dados...');
 
+  const datasetPath = resolve(__dirname, '../src/dataset/clean_with_vibe_full.csv');
+  const seedDataset = process.env.SEED_DATASET === 'true';
+
   // ─────────────────────────────────────────
   // CRIAR GÊNEROS
   // ─────────────────────────────────────────
-  const genres = await Promise.all([
-    prisma.genre.create({
-      data: {
-        name: 'Eletrônico',
-        spotifyKey: 'electronic',
-      },
-    }),
-    prisma.genre.create({
-      data: {
-        name: 'Hip Hop',
-        spotifyKey: 'hip-hop',
-      },
-    }),
-    prisma.genre.create({
-      data: {
-        name: 'Rock',
-        spotifyKey: 'rock',
-      },
-    }),
-    prisma.genre.create({
-      data: {
-        name: 'Pop',
-        spotifyKey: 'pop',
-      },
-    }),
-    prisma.genre.create({
-      data: {
-        name: 'Jazz',
-        spotifyKey: 'jazz',
-      },
-    }),
-    prisma.genre.create({
-      data: {
-        name: 'Clássico',
-        spotifyKey: 'classical',
-      },
-    }),
-  ]);
+  const defaultGenres = [
+    { name: 'Eletrônico', spotifyKey: 'electronic' },
+    { name: 'Hip Hop', spotifyKey: 'hip-hop' },
+    { name: 'Rock', spotifyKey: 'rock' },
+    { name: 'Pop', spotifyKey: 'pop' },
+    { name: 'Jazz', spotifyKey: 'jazz' },
+    { name: 'Clássico', spotifyKey: 'classical' },
+  ];
 
-  console.log(`✅ ${genres.length} gêneros criados`);
+  if (seedDataset && existsSync(datasetPath)) {
+    const csvContent = readFileSync(datasetPath, 'utf-8');
+    const records = parse(csvContent, {
+      columns: true,
+      skip_empty_lines: true,
+    }) as Array<Record<string, string>>;
+
+    const genreKeys = new Set<string>();
+    for (const record of records) {
+      const rawGenre = (record.track_genre || '').trim();
+      if (rawGenre) {
+        genreKeys.add(rawGenre);
+      }
+    }
+
+    const datasetGenres = Array.from(genreKeys).map((key) => ({
+      name: key,
+      spotifyKey: key,
+    }));
+
+    await prisma.genre.createMany({
+      data: datasetGenres,
+      skipDuplicates: true,
+    });
+
+    console.log(`✅ ${datasetGenres.length} gêneros do dataset criados`);
+  } else {
+    await prisma.genre.createMany({
+      data: defaultGenres,
+      skipDuplicates: true,
+    });
+    console.log(`✅ ${defaultGenres.length} gêneros padrão criados`);
+  }
+
+  const genres = await prisma.genre.findMany();
 
   // ─────────────────────────────────────────
   // CRIAR USUÁRIOS
@@ -132,132 +142,172 @@ async function main() {
   // ─────────────────────────────────────────
   // CRIAR TRACKS
   // ─────────────────────────────────────────
-  const tracks = await Promise.all([
-    // Eletrônico
-    prisma.track.create({
-      data: {
-        spotifyId: 'spotify_001',
-        trackName: 'Electric Dreams',
-        artists: 'The Synthetics;DJ Wave',
-        albumName: 'Neon Nights',
-        popularity: 75,
-        durationMs: 240000,
-        explicit: false,
-        energy: 0.85,
-        valence: 0.7,
-        danceability: 0.8,
-        acousticness: 0.1,
-        instrumentalness: 0.5,
-        speechiness: 0.05,
-        liveness: 0.2,
-        loudness: -6.5,
-        tempo: 128,
-        key: 0,
-        mode: 1,
-        timeSignature: 4,
-        trackGenre: 'Eletrônico',
-      },
-    }),
-    // Hip Hop
-    prisma.track.create({
-      data: {
-        spotifyId: 'spotify_002',
-        trackName: 'Street Vibes',
-        artists: 'MC Fire;Beat Master',
-        albumName: 'Urban Legends',
-        popularity: 82,
-        durationMs: 210000,
-        explicit: true,
-        energy: 0.9,
-        valence: 0.6,
-        danceability: 0.75,
-        acousticness: 0.05,
-        instrumentalness: 0.1,
-        speechiness: 0.3,
-        liveness: 0.15,
-        loudness: -5.8,
-        tempo: 92,
-        key: 1,
-        mode: 0,
-        timeSignature: 4,
-        trackGenre: 'Hip Hop',
-      },
-    }),
-    // Rock
-    prisma.track.create({
-      data: {
-        spotifyId: 'spotify_003',
-        trackName: 'Rock Anthem',
-        artists: 'Thunder Road;Stone Hearts',
-        albumName: 'Electric Rebellion',
-        popularity: 88,
-        durationMs: 280000,
-        explicit: false,
-        energy: 0.95,
-        valence: 0.65,
-        danceability: 0.6,
-        acousticness: 0.15,
-        instrumentalness: 0.3,
-        speechiness: 0.1,
-        liveness: 0.4,
-        loudness: -4.2,
-        tempo: 140,
-        key: 5,
-        mode: 1,
-        timeSignature: 4,
-        trackGenre: 'Rock',
-      },
-    }),
-    // Pop
-    prisma.track.create({
-      data: {
-        spotifyId: 'spotify_004',
-        trackName: 'Sunshine Pop',
-        artists: 'Bright Stars;Pop Queens',
-        albumName: 'Happy Days',
-        popularity: 90,
-        durationMs: 200000,
-        explicit: false,
-        energy: 0.7,
-        valence: 0.95,
-        danceability: 0.85,
-        acousticness: 0.2,
-        instrumentalness: 0.05,
-        speechiness: 0.1,
-        liveness: 0.1,
-        loudness: -5.0,
-        tempo: 110,
-        key: 7,
-        mode: 1,
-        timeSignature: 4,
-        trackGenre: 'Pop',
-      },
-    }),
-    // Jazz
-    prisma.track.create({
-      data: {
-        spotifyId: 'spotify_005',
-        trackName: 'Midnight Jazz',
-        artists: 'Blue Notes;Smoky Nights',
-        albumName: 'After Hours',
-        popularity: 65,
-        durationMs: 320000,
-        explicit: false,
-        energy: 0.55,
-        valence: 0.5,
-        danceability: 0.45,
-        acousticness: 0.7,
-        instrumentalness: 0.8,
-        speechiness: 0.02,
-        liveness: 0.6,
-        loudness: -8.0,
-        tempo: 85,
-        key: 0,
-        mode: 0,
-        timeSignature: 4,
-        trackGenre: 'Jazz',
-      },
-    }),
+  if (seedDataset && existsSync(datasetPath)) {
+    const csvContent = readFileSync(datasetPath, 'utf-8');
+    const records = parse(csvContent, {
+      columns: true,
+      skip_empty_lines: true,
+    }) as Array<Record<string, string>>;
+
+    const tracksToInsert = records.map((record) => ({
+      spotifyId: record.track_id,
+      trackName: record.track_name,
+      artists: record.artists,
+      albumName: record.album_name,
+      popularity: Number(record.popularity || 0),
+      durationMs: Number(record.duration_ms || 0),
+      explicit: String(record.explicit).toLowerCase() === 'true',
+      energy: Number(record.energy || 0),
+      valence: Number(record.valence || 0),
+      danceability: Number(record.danceability || 0),
+      acousticness: Number(record.acousticness || 0),
+      instrumentalness: Number(record.instrumentalness || 0),
+      speechiness: Number(record.speechiness || 0),
+      liveness: Number(record.liveness || 0),
+      loudness: Number(record.loudness || 0),
+      tempo: Number(record.tempo || 0),
+      key: Number(record.key || 0),
+      mode: Number(record.mode || 0),
+      timeSignature: Number(record.time_signature || 0),
+      trackGenre: record.track_genre,
+    }));
+
+    const chunkSize = 1000;
+    for (let i = 0; i < tracksToInsert.length; i += chunkSize) {
+      const chunk = tracksToInsert.slice(i, i + chunkSize);
+      await prisma.track.createMany({
+        data: chunk,
+        skipDuplicates: true,
+      });
+      console.log(`✅ Inseridos ${Math.min(i + chunkSize, tracksToInsert.length)} tracks`);
+    }
+  } else {
+    const tracks = await Promise.all([
+      // Eletrônico
+      prisma.track.create({
+        data: {
+          spotifyId: 'spotify_001',
+          trackName: 'Electric Dreams',
+          artists: 'The Synthetics;DJ Wave',
+          albumName: 'Neon Nights',
+          popularity: 75,
+          durationMs: 240000,
+          explicit: false,
+          energy: 0.85,
+          valence: 0.7,
+          danceability: 0.8,
+          acousticness: 0.1,
+          instrumentalness: 0.5,
+          speechiness: 0.05,
+          liveness: 0.2,
+          loudness: -6.5,
+          tempo: 128,
+          key: 0,
+          mode: 1,
+          timeSignature: 4,
+          trackGenre: 'Eletrônico',
+        },
+      }),
+      // Hip Hop
+      prisma.track.create({
+        data: {
+          spotifyId: 'spotify_002',
+          trackName: 'Street Vibes',
+          artists: 'MC Fire;Beat Master',
+          albumName: 'Urban Legends',
+          popularity: 82,
+          durationMs: 210000,
+          explicit: true,
+          energy: 0.9,
+          valence: 0.6,
+          danceability: 0.75,
+          acousticness: 0.05,
+          instrumentalness: 0.1,
+          speechiness: 0.3,
+          liveness: 0.15,
+          loudness: -5.8,
+          tempo: 92,
+          key: 1,
+          mode: 0,
+          timeSignature: 4,
+          trackGenre: 'Hip Hop',
+        },
+      }),
+      // Rock
+      prisma.track.create({
+        data: {
+          spotifyId: 'spotify_003',
+          trackName: 'Rock Anthem',
+          artists: 'Thunder Road;Stone Hearts',
+          albumName: 'Electric Rebellion',
+          popularity: 88,
+          durationMs: 280000,
+          explicit: false,
+          energy: 0.95,
+          valence: 0.65,
+          danceability: 0.6,
+          acousticness: 0.15,
+          instrumentalness: 0.3,
+          speechiness: 0.1,
+          liveness: 0.4,
+          loudness: -4.2,
+          tempo: 140,
+          key: 5,
+          mode: 1,
+          timeSignature: 4,
+          trackGenre: 'Rock',
+        },
+      }),
+      // Pop
+      prisma.track.create({
+        data: {
+          spotifyId: 'spotify_004',
+          trackName: 'Sunshine Pop',
+          artists: 'Bright Stars;Pop Queens',
+          albumName: 'Happy Days',
+          popularity: 90,
+          durationMs: 200000,
+          explicit: false,
+          energy: 0.7,
+          valence: 0.95,
+          danceability: 0.85,
+          acousticness: 0.2,
+          instrumentalness: 0.05,
+          speechiness: 0.1,
+          liveness: 0.1,
+          loudness: -5.0,
+          tempo: 110,
+          key: 7,
+          mode: 1,
+          timeSignature: 4,
+          trackGenre: 'Pop',
+        },
+      }),
+      // Jazz
+      prisma.track.create({
+        data: {
+          spotifyId: 'spotify_005',
+          trackName: 'Midnight Jazz',
+          artists: 'Blue Notes;Smoky Nights',
+          albumName: 'After Hours',
+          popularity: 65,
+          durationMs: 320000,
+          explicit: false,
+          energy: 0.55,
+          valence: 0.5,
+          danceability: 0.45,
+          acousticness: 0.7,
+          instrumentalness: 0.8,
+          speechiness: 0.02,
+          liveness: 0.6,
+          loudness: -8.0,
+          tempo: 85,
+          key: 0,
+          mode: 0,
+          timeSignature: 4,
+          trackGenre: 'Jazz',
+        },
+      }),
     // Clássico
     prisma.track.create({
       data: {
@@ -283,9 +333,10 @@ async function main() {
         trackGenre: 'Clássico',
       },
     }),
-  ]);
+    ]);
 
-  console.log(`✅ ${tracks.length} tracks criadas`);
+    console.log(`✅ ${tracks.length} tracks criadas`);
+  }
 
   // ─────────────────────────────────────────
   // CRIAR PLAYLISTS

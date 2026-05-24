@@ -17,7 +17,7 @@ export class AuthService {
   async signIn(
     email: string,
     password: string,
-  ): Promise<{ access_token: string }> {
+  ): Promise<{ access_token: string; user: { id: string; name: string; email: string; onboardingDone: boolean } }> {
     const user = await this.usersService.findByEmail(email);
     
     if (!user) {
@@ -34,6 +34,12 @@ export class AuthService {
     const payload = { sub: (user as any).id, email: (user as any).email };
     return {
       access_token: await this.jwtService.signAsync(payload),
+      user: {
+        id: (user as any).id,
+        name: (user as any).name,
+        email: (user as any).email,
+        onboardingDone: (user as any).onboardingDone,
+      },
     };
   }
 

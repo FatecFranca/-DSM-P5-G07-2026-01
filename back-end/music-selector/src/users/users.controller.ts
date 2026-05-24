@@ -1,5 +1,6 @@
 import { Controller, Get, Post, Body, Patch, Param, Delete, HttpCode, UseGuards, Logger } from '@nestjs/common';
 import { ApiTags, ApiOperation, ApiResponse, ApiParam } from '@nestjs/swagger';
+import { Throttle } from '@nestjs/throttler';
 import { UsersService } from './users.service';
 import { AuthService } from '../auth/auth.service';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
@@ -22,6 +23,7 @@ export class UsersController {
 
   @Post('register')
   @HttpCode(201)
+  @Throttle({ default: { limit: 5, ttl: 60000 } })
   @ApiOperation({
     summary: '📝 Registrar novo usuário',
     description: 'RN01-RN06: Cria usuário com validações (email único, senha 8+ chars, idade 13+). RNF-S01: Sanitização. RNF-S03: BCrypt',
@@ -48,6 +50,7 @@ export class UsersController {
 
   @Post('login')
   @HttpCode(200)
+  @Throttle({ default: { limit: 5, ttl: 60000 } })
   @ApiOperation({
     summary: '🔑 Login de usuário',
     description: 'RN07-RN09: Autentica e retorna JWT token. Valida email/senha com BCrypt (RNF-S03). Requer onboarding completo (RN10)',
@@ -76,6 +79,7 @@ export class UsersController {
 
   @Post('forgot-password')
   @HttpCode(200)
+  @Throttle({ default: { limit: 5, ttl: 60000 } })
   @ApiOperation({
     summary: '🔐 Solicitar reset de senha',
     description: 'RN08: Gera token seguro (32 bytes, 1h expiração). Não revela se email existe (segurança). Email via Nodemailer/SendGrid',
@@ -97,6 +101,7 @@ export class UsersController {
 
   @Post('reset-password')
   @HttpCode(200)
+  @Throttle({ default: { limit: 5, ttl: 60000 } })
   @ApiOperation({
     summary: '🔑 Resetar senha',
     description: 'RNF-S03: Valida token (BCrypt), hash nova senha, marca token como usado (LGPD), envia confirmação por email',
