@@ -159,6 +159,7 @@ export class PlaylistGeneratorService {
           danceability: track.danceability,
           acousticness: track.acousticness,
           instrumentalness: track.instrumentalness,
+          speechiness: track.speechiness,
           tempo: track.tempo,
         },
         explanation: this.generateExplanation(
@@ -319,6 +320,7 @@ export class PlaylistGeneratorService {
           danceability: track.danceability,
           acousticness: track.acousticness,
           instrumentalness: track.instrumentalness,
+          speechiness: track.speechiness,
           tempo: track.tempo,
         },
         explanation: this.generateExplanation(track, objective, mood, energyLevel),
@@ -364,6 +366,12 @@ export class PlaylistGeneratorService {
       userId: user.id,
       preferredGenres: user.genres.map((ug) => ug.genre.spotifyKey),
       audioPreference: user.onboardingProfile?.audioPreference || 'MIXED',
+      danceability: user.onboardingProfile?.danceability ?? 0,
+      energy: user.onboardingProfile?.energy ?? 0,
+      valence: user.onboardingProfile?.valence ?? 0,
+      acousticness: user.onboardingProfile?.acousticness ?? 0,
+      instrumentalness: user.onboardingProfile?.instrumentalness ?? 0,
+      speechiness: user.onboardingProfile?.speechiness ?? 0,
       feedbackHistory: user.feedbacks.map((f) => ({
         trackId: f.trackId,
         reaction: f.reaction,

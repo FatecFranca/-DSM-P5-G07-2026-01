@@ -60,7 +60,7 @@ export class RecommendationsController {
             album: 'Album Name',
             genre: 'Electronic',
             popularity: 75,
-            features: { energy: 0.75, valence: 0.65, danceability: 0.7, acousticness: 0.1, instrumentalness: 0.05, tempo: 120 },
+            features: { energy: 0.75, valence: 0.65, danceability: 0.7, acousticness: 0.1, instrumentalness: 0.05, speechiness: 0.08, tempo: 120 },
             explanation: '75% de energia, perfeito para seu foco',
             reason: 'Sugerida por ter valência alta (motivante)',
           },

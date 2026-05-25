@@ -61,3 +61,4 @@ report.[0-9]*.[0-9]*.[0-9]*.[0-9]*.json
 /ml/artifacts
 *.joblib
 *.pkl
+/dataset

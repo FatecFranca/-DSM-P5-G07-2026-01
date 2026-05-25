@@ -16,6 +16,9 @@ export class TrackFeatureDto {
   @ApiProperty({ example: 0.15, description: 'Instrumentalidade (0.0-1.0)' })
   instrumentalness!: number;
 
+  @ApiProperty({ example: 0.08, description: 'Speechiness (0.0-1.0)' })
+  speechiness!: number;
+
   @ApiProperty({ example: 120, description: 'Tempo em BPM' })
   tempo!: number;
 }

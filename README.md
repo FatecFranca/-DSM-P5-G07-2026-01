@@ -19,6 +19,7 @@ Desenvolvimento de um **sistema de recomendação musical hiperpersonalizado** u
 ### 2. **Onboarding Inteligente**
 - Wizard inicial com questionário de 3 passos (gêneros, estilo de escuta, preferência vocal/instrumental)
 - Mitigação de Cold Start com alimentação inicial de dados
+- Captura de atributos musicais para o ML: danceability, energy, valence, acousticness, instrumentalness, speechiness
 
 ### 3. **Motor de Recomendação Híbrido** *(Core)*
 - **Vibes Diárias**: Playlists automáticas adaptadas ao perfil (Foco, Treino, Relaxamento)
@@ -110,7 +111,14 @@ MusicSelector/
 
 4. **Executar migrações do banco de dados**
    ```bash
-   npm run prisma:migrate
+   npx prisma migrate dev
+   npx prisma generate
+   ```
+
+5. **(Opcional) Seed com dataset completo**
+   ```bash
+   # Carrega tracks e generos do CSV em dataset/clean_with_vibe_full.csv
+   SEED_DATASET=true npm run db:seed
    ```
 
 ### Executar
@@ -143,6 +151,8 @@ npm run start:prod
 | `npm run test:watch` | Executa testes em modo watch |
 | `npm run test:cov` | Executa testes com cobertura |
 | `npm run test:e2e` | Executa testes end-to-end |
+| `npm run db:push` | Sincroniza schema com banco (dev) |
+| `npm run db:seed` | Executa seed do banco |
 
 ---
 

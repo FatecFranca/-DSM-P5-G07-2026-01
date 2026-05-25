@@ -53,7 +53,7 @@ export class UsersController {
   @Throttle({ default: { limit: 5, ttl: 60000 } })
   @ApiOperation({
     summary: '🔑 Login de usuário',
-    description: 'RN07-RN09: Autentica e retorna JWT token. Valida email/senha com BCrypt (RNF-S03). Requer onboarding completo (RN10)',
+    description: 'RN07-RN09: Autentica e retorna JWT token. Valida email/senha com BCrypt (RNF-S03). Retorna onboardingDone para guiar o fluxo (RN10)',
   })
   @ApiResponse({
     status: 200,
@@ -71,7 +71,6 @@ export class UsersController {
     },
   })
   @ApiResponse({ status: 401, description: '❌ Email ou senha inválidos' })
-  @ApiResponse({ status: 400, description: '❌ Complete o onboarding primeiro (RN10)' })
   async login(@Body() credentials: { email: string; password: string }) {
     this.logger.log(`🔑 Login attempt: ${credentials.email}`);
     return this.authService.signIn(credentials.email, credentials.password);
@@ -127,7 +126,7 @@ export class UsersController {
   @ApiParam({ name: 'id', description: 'ID do usuário' })
   @ApiOperation({
     summary: '🎸 Completar Onboarding',
-    description: 'RN10-RN13: Wizard 3 passos (1-5 gêneros, estilo escuta, pref vocal/instrumental). Obrigatório antes de usar app. Cold Start mitigation',
+    description: 'RN10-RN13: Wizard 3 passos (1-5 gêneros, estilo escuta, pref vocal/instrumental). Inclui atributos ML (danceability, energy, valence, acousticness, instrumentalness, speechiness).',
   })
   @ApiResponse({
     status: 200,
@@ -138,6 +137,12 @@ export class UsersController {
         userId: 'uuid-123',
         favoriteGenres: ['rock', 'indie', 'pop'],
         audioPreference: 'mixed',
+        danceability: 0.7,
+        energy: 0.8,
+        valence: 0.6,
+        acousticness: 0.4,
+        instrumentalness: 0.2,
+        speechiness: 0.1,
       },
     },
   })
@@ -152,6 +157,12 @@ export class UsersController {
       userId,
       body.favoriteGenres,
       body.audioPreference,
+      body.danceability,
+      body.energy,
+      body.valence,
+      body.acousticness,
+      body.instrumentalness,
+      body.speechiness,
     );
   }
 
@@ -161,7 +172,7 @@ export class UsersController {
   @ApiParam({ name: 'id', description: 'ID do usuário' })
   @ApiOperation({
     summary: '✏️ Atualizar perfil',
-    description: 'RN26-RN28: Edita nome, senha (RNF-S03: BCrypt), gêneros, audioPreference. Dispara recalcimento de vibes (RN28)',
+    description: 'RN26-RN28: Edita nome, senha (RNF-S03: BCrypt), gêneros, audioPreference e atributos ML. Dispara recalcimento de vibes (RN28)',
   })
   @ApiResponse({
     status: 200,
@@ -173,6 +184,8 @@ export class UsersController {
           id: 'uuid-123',
           name: 'João Silva Updated',
           favoriteGenres: ['rock', 'indie'],
+          energy: 0.8,
+          valence: 0.6,
         },
       },
     },
@@ -199,7 +212,6 @@ export class UsersController {
     schema: {
       example: {
         message: '✅ Conta deletada com sucesso. Seus dados foram anonimizados.',
-        deletedAt: '2026-05-22T10:30:00Z',
       },
     },
   })

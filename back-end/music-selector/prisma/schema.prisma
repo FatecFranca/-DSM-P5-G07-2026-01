@@ -57,6 +57,12 @@ model OnboardingProfile {
   id               String         @id @default(uuid())
   userId           String         @unique @map("user_id")
   audioPreference  AudioPreference @map("audio_preference")
+  danceability     Float          @default(0) @map("danceability")
+  energy           Float          @default(0) @map("energy")
+  valence          Float          @default(0) @map("valence")
+  acousticness     Float          @default(0) @map("acousticness")
+  instrumentalness Float          @default(0) @map("instrumentalness")
+  speechiness      Float          @default(0) @map("speechiness")
   updatedAt        DateTime       @updatedAt @map("updated_at")
 
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)

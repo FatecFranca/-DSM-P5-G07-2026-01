@@ -148,6 +148,10 @@ export class UsersService {
         throw new BadRequestException('Usuário não encontrado');
       }
 
+      if (user.onboardingDone) {
+        throw new BadRequestException('Onboarding já foi completado');
+      }
+
       // Hash da nova senha
       const passwordHash = await bcrypt.hash(password, 10);
 
@@ -199,6 +203,12 @@ export class UsersService {
     userId: string,
     favoriteGenres: string[],
     audioPreference: string,
+    danceability: number,
+    energy: number,
+    valence: number,
+    acousticness: number,
+    instrumentalness: number,
+    speechiness: number,
   ) {
     try {
       const user = await this.prisma.user.findUnique({
@@ -222,9 +232,21 @@ export class UsersService {
         create: {
           userId,
           audioPreference: normalizedPreference as any,
+          danceability,
+          energy,
+          valence,
+          acousticness,
+          instrumentalness,
+          speechiness,
         },
         update: {
           audioPreference: normalizedPreference as any,
+          danceability,
+          energy,
+          valence,
+          acousticness,
+          instrumentalness,
+          speechiness,
         },
       });
 
@@ -288,18 +310,39 @@ export class UsersService {
       }
 
       // RN27: Atualizar preferências de onboarding se fornecidas
-      if (dto.audioPreference) {
-        const normalizedPreference = this.normalizeAudioPreference(
-          dto.audioPreference,
-        );
+      if (
+        dto.audioPreference ||
+        dto.danceability !== undefined ||
+        dto.energy !== undefined ||
+        dto.valence !== undefined ||
+        dto.acousticness !== undefined ||
+        dto.instrumentalness !== undefined ||
+        dto.speechiness !== undefined
+      ) {
+        const normalizedPreference = dto.audioPreference
+          ? this.normalizeAudioPreference(dto.audioPreference)
+          : undefined;
+
         await this.prisma.onboardingProfile.upsert({
           where: { userId: id },
           create: {
             userId: id,
-            audioPreference: normalizedPreference as any,
+            audioPreference: (normalizedPreference || 'MIXED') as any,
+            danceability: dto.danceability ?? 0,
+            energy: dto.energy ?? 0,
+            valence: dto.valence ?? 0,
+            acousticness: dto.acousticness ?? 0,
+            instrumentalness: dto.instrumentalness ?? 0,
+            speechiness: dto.speechiness ?? 0,
           },
           update: {
-            audioPreference: normalizedPreference as any,
+            ...(normalizedPreference ? { audioPreference: normalizedPreference as any } : {}),
+            ...(dto.danceability !== undefined ? { danceability: dto.danceability } : {}),
+            ...(dto.energy !== undefined ? { energy: dto.energy } : {}),
+            ...(dto.valence !== undefined ? { valence: dto.valence } : {}),
+            ...(dto.acousticness !== undefined ? { acousticness: dto.acousticness } : {}),
+            ...(dto.instrumentalness !== undefined ? { instrumentalness: dto.instrumentalness } : {}),
+            ...(dto.speechiness !== undefined ? { speechiness: dto.speechiness } : {}),
           },
         });
       }
