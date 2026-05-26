@@ -59,3 +59,10 @@ report.[0-9]*.[0-9]*.[0-9]*.[0-9]*.json
 
 # Prisma generated client
 **/generated/prisma
+
+# ml
+
+.venv/
+__pycache__/
+.ipynb_checkpoints/
+*.pyc
