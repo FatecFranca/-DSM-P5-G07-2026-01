@@ -1,10 +1,16 @@
 import { Injectable, Logger, BadRequestException } from '@nestjs/common';
 import { PrismaService } from '../../prisma/prisma.service';
-import { GetRecommendationsDto } from '../dto/get-recommendations.dto';
+import {
+  GetRecommendationsDto,
+  ObjectiveType,
+  MoodType,
+  EnergyLevelType,
+} from '../dto/get-recommendations.dto';
 import { MLService } from './ml.service';
 import { PlaylistService } from './playlist.service';
 import { FeedbackService } from './feedback.service';
 import type { TrackModel } from '../../generated/prisma/models/Track';
+import { mapAnswersToMlFeatures } from './map-answers-to-ml-features';
 
 /**
  * PlaylistGeneratorService: Lógica de geração de playlists
@@ -56,24 +62,20 @@ export class PlaylistGeneratorService {
         `🎯 Iniciando geração: objetivo=${dto.objective}, energia=${dto.energyLevel}, humor=${dto.mood}`,
       );
 
-      // Preparar features do usuário
-      const userFeatures = this.prepareUserFeatures(user);
-
-      // Chamar ML service com limite seguro (sempre pedir mais para ter margem após filtros)
-      const mlRequestLimit = Math.max(targetCount * 5, 50);
-      const mlRecommendations = await this.mlService.getRecommendations({
+      const mlFeatures = mapAnswersToMlFeatures({
         objective: dto.objective,
         mood: dto.mood,
         energyLevel: dto.energyLevel,
-        userFeatures,
-        limit: mlRequestLimit,
+        audioPreference: user.onboardingProfile?.audioPreference ?? 'MIXED',
       });
 
-      if (!mlRecommendations.trackIds || mlRecommendations.trackIds.length === 0) {
-        throw new BadRequestException(
-          '❌ ML Service não retornou recomendações. Tente novamente.',
-        );
+      const prediction = await this.mlService.predictVibe(mlFeatures);
+
+      if (!prediction?.vibe) {
+        throw new BadRequestException('❌ ML Service não retornou uma vibe.');
       }
+
+      const predictedVibe = prediction.vibe.toUpperCase();
 
       // RN24: Recuperar dislikes neste contexto específico
       const dislikedTrackIds = await this.feedbackService.getUserDislikes(
@@ -88,12 +90,16 @@ export class PlaylistGeneratorService {
       // Recuperar dados das tracks e filtrar dislikes
       const tracks = await this.prisma.track.findMany({
         where: {
-          id: { in: mlRecommendations.trackIds },
+          vibe: predictedVibe as any,
           // RN24: Excluir dislikes
           NOT: {
             id: { in: dislikedTrackIds },
           },
         },
+        orderBy: {
+          popularity: 'desc',
+        },
+        take: Math.max(targetCount * 5, 50),
       });
 
       if (tracks.length < targetCount) {
@@ -106,47 +112,13 @@ export class PlaylistGeneratorService {
       }
 
       // Rank e select exatamente 10 melhores
-      const trackById = new Map<string, TrackModel>(
-        tracks.map((track) => [track.id, track])
-      );
-
-      const rankedCandidates = (mlRecommendations.trackIds || [])
-        .map((trackId, index) => {
-          const track = trackById.get(trackId) as TrackModel | undefined;
-          if (!track) {
-            return null;
-          }
-          const relevanceScore =
-            (mlRecommendations.trackIds.length - index) /
-            mlRecommendations.trackIds.length;
-          const popularityScore = (track.popularity || 0) / 100;
-          const score = relevanceScore * 0.7 + popularityScore * 0.3;
-
-          return { track, score, index };
-        })
-        .filter(Boolean) as Array<{
-        track: TrackModel;
-        score: number;
-        index: number;
-      }>;
-
-      if (rankedCandidates.length < targetCount) {
-        throw new BadRequestException(
-          `🎯 Falha crítica: apenas ${rankedCandidates.length}/${targetCount} candidatos após ranking`,
-        );
-      }
-
-      // Ordenar e selecionar exatamente 10
-      rankedCandidates.sort((a, b) => b.score - a.score || a.index - b.index);
-
-      const selectedTracks = rankedCandidates
-        .slice(0, targetCount)
-        .map((item) => item.track);
+      const selectedTracks = tracks.slice(0, targetCount) as TrackModel[];
 
       this.logger.debug(`✅ Selecionadas exatamente ${selectedTracks.length} faixas`);
 
       // Enriquecer com features e explicações
-      const enrichedTracks = selectedTracks.map((track, index) => ({
+      const predictedScore = prediction.scores?.[prediction.vibe];
+      const enrichedTracks = selectedTracks.map((track) => ({
         id: track.id,
         title: track.trackName,
         artist: track.artists,
@@ -169,8 +141,9 @@ export class PlaylistGeneratorService {
           dto.energyLevel,
         ),
         reason:
-          mlRecommendations.reasons?.[index] ||
-          'Recomendado especialmente para você',
+          typeof predictedScore === 'number'
+            ? `Predicted vibe ${prediction.vibe} (${predictedScore.toFixed(2)})`
+            : `Predicted vibe ${prediction.vibe}`,
       }));
 
       // Criar playlist no banco
@@ -201,7 +174,7 @@ export class PlaylistGeneratorService {
         generatedAt: playlist.generatedAt,
         tracks: enrichedTracks,
         totalTracks: enrichedTracks.length,
-        mlModelScore: mlRecommendations.modelScore || undefined,
+        mlModelScore: typeof predictedScore === 'number' ? predictedScore : undefined,
         explanation: `Playlist "${playlist.name}" gerada com base em suas preferências (${enrichedTracks.length} faixas)`,
       };
 
@@ -247,18 +220,20 @@ export class PlaylistGeneratorService {
       // Determinar objetivo baseado na hora
       const { objective, mood, energyLevel } = this.determineDailyVibe();
 
-      // Preparar features
-      const userFeatures = this.prepareUserFeatures(user);
-
-      // Chamar ML service
-      const mlRequestLimit = targetCount * 5;
-      const mlRecommendations = await this.mlService.getRecommendations({
+      const mlFeatures = mapAnswersToMlFeatures({
         objective,
         mood,
         energyLevel,
-        userFeatures,
-        limit: mlRequestLimit,
+        audioPreference: user.onboardingProfile?.audioPreference ?? 'MIXED',
       });
+
+      const prediction = await this.mlService.predictVibe(mlFeatures);
+
+      if (!prediction?.vibe) {
+        throw new BadRequestException('ML Service nao retornou uma vibe');
+      }
+
+      const predictedVibe = prediction.vibe.toUpperCase();
 
       // RN24: Filtrar dislikes
       const dislikedTrackIds = await this.feedbackService.getUserDislikes(
@@ -268,46 +243,23 @@ export class PlaylistGeneratorService {
 
       const tracks = await this.prisma.track.findMany({
         where: {
-          id: { in: mlRecommendations.trackIds },
+          vibe: predictedVibe as any,
           NOT: { id: { in: dislikedTrackIds } },
         },
+        orderBy: {
+          popularity: 'desc',
+        },
+        take: targetCount * 5,
       });
 
       if (tracks.length < targetCount) {
         throw new BadRequestException('Nenhuma track disponível para hoje');
       }
 
-      const trackById = new Map<string, TrackModel>(tracks.map((track) => [track.id, track]));
-      const rankedCandidates = (mlRecommendations.trackIds || [])
-        .map((trackId, index) => {
-          const track = trackById.get(trackId) as TrackModel | undefined;
-          if (!track) {
-            return null;
-          }
-          const relevanceScore =
-            (mlRecommendations.trackIds.length - index) /
-            mlRecommendations.trackIds.length;
-          const popularityScore = (track.popularity || 0) / 100;
-          const score = relevanceScore * 0.7 + popularityScore * 0.3;
-
-          return { track, score, index };
-        })
-        .filter(Boolean) as Array<{ track: TrackModel; score: number; index: number }>;
-
-      if (rankedCandidates.length < targetCount) {
-        throw new BadRequestException('Nenhuma track disponível para hoje');
-      }
-
-      rankedCandidates.sort(
-        (a, b) => b.score - a.score || a.index - b.index,
-      );
-
-      const selectedTracks = rankedCandidates
-        .slice(0, targetCount)
-        .map((item) => item.track);
+      const selectedTracks = tracks.slice(0, targetCount) as TrackModel[];
 
       // Enriquecer
-      const enrichedTracks = selectedTracks.map((track, index) => ({
+      const enrichedTracks = selectedTracks.map((track) => ({
         id: track.id,
         title: track.trackName,
         artist: track.artists,
@@ -359,34 +311,6 @@ export class PlaylistGeneratorService {
   }
 
   /**
-   * Preparar features do usuário para ML service
-   */
-  private prepareUserFeatures(user: any) {
-    return {
-      userId: user.id,
-      preferredGenres: user.genres.map((ug) => ug.genre.spotifyKey),
-      audioPreference: user.onboardingProfile?.audioPreference || 'MIXED',
-      danceability: user.onboardingProfile?.danceability ?? 0,
-      energy: user.onboardingProfile?.energy ?? 0,
-      valence: user.onboardingProfile?.valence ?? 0,
-      acousticness: user.onboardingProfile?.acousticness ?? 0,
-      instrumentalness: user.onboardingProfile?.instrumentalness ?? 0,
-      speechiness: user.onboardingProfile?.speechiness ?? 0,
-      feedbackHistory: user.feedbacks.map((f) => ({
-        trackId: f.trackId,
-        reaction: f.reaction,
-        trackFeatures: {
-          energy: f.track.energy,
-          valence: f.track.valence,
-          danceability: f.track.danceability,
-          acousticness: f.track.acousticness,
-          instrumentalness: f.track.instrumentalness,
-        },
-      })),
-    };
-  }
-
-  /**
    * Gerar nome descritivo para playlist
    */
   private generatePlaylistName(objective: string, mood: string): string {
@@ -410,17 +334,37 @@ export class PlaylistGeneratorService {
   /**
    * Determinar objetivo e mood automático baseado na hora do dia
    */
-  private determineDailyVibe() {
+  private determineDailyVibe(): {
+    objective: ObjectiveType;
+    mood: MoodType;
+    energyLevel: EnergyLevelType;
+  } {
     const hour = new Date().getHours();
 
     if (hour >= 6 && hour < 12) {
-      return { objective: 'MOOD_BOOST', mood: 'HAPPY', energyLevel: 'MEDIUM' };
+      return {
+        objective: ObjectiveType.MOOD_BOOST,
+        mood: MoodType.HAPPY,
+        energyLevel: EnergyLevelType.MEDIUM,
+      };
     } else if (hour >= 12 && hour < 18) {
-      return { objective: 'FOCUS', mood: 'NEUTRAL', energyLevel: 'MEDIUM' };
+      return {
+        objective: ObjectiveType.FOCUS,
+        mood: MoodType.NEUTRAL,
+        energyLevel: EnergyLevelType.MEDIUM,
+      };
     } else if (hour >= 18 && hour < 22) {
-      return { objective: 'RELAX', mood: 'HAPPY', energyLevel: 'LOW' };
+      return {
+        objective: ObjectiveType.RELAX,
+        mood: MoodType.HAPPY,
+        energyLevel: EnergyLevelType.LOW,
+      };
     } else {
-      return { objective: 'RELAX', mood: 'NEUTRAL', energyLevel: 'LOW' };
+      return {
+        objective: ObjectiveType.RELAX,
+        mood: MoodType.NEUTRAL,
+        energyLevel: EnergyLevelType.LOW,
+      };
     }
   }
 

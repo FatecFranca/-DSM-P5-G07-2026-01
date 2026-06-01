@@ -117,6 +117,7 @@ model Track {
   popularity         Int
   durationMs         Int      @map("duration_ms")
   explicit           Boolean  @default(false)
+  vibe               Vibe
   energy             Float    // 0.0 a 1.0
   valence            Float    // 0.0 a 1.0
   danceability       Float    // 0.0 a 1.0
@@ -136,6 +137,7 @@ model Track {
   feedbacks      Feedback[]
 
   @@index([trackGenre])
+  @@index([vibe])
   @@map("tracks")
 }
 
@@ -225,6 +227,17 @@ enum PlaylistType {
   ON_DEMAND   // Criar Minha Vibe
 
   @@map("playlist_type")
+}
+
+enum Vibe {
+  FOCUS
+  WORKOUT
+  PARTY
+  RELAX
+  CHILL
+  ROMANTIC
+
+  @@map("vibe")
 }
 
 enum Reaction {

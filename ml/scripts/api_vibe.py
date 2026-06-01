@@ -52,6 +52,14 @@ class VibeResponse(BaseModel):
     features_used: Dict[str, float]
 
 
+class FeedbackRequest(BaseModel):
+    userId: str | None = None
+    trackId: str | None = None
+    reaction: str | None = None
+    objectiveContext: str | None = None
+    trackFeatures: Dict[str, float] | None = None
+
+
 @app.get("/")
 def health_check():
     return {
@@ -94,3 +102,5 @@ def predict_vibe(request: VibeRequest):
         "scores": scores,
         "features_used": input_data,
     }
+
+

@@ -33,7 +33,7 @@ export class SaveFeedbackDto {
     enum: FeedbackType,
   })
   @IsEnum(FeedbackType, { message: 'Reação deve ser LIKE ou DISLIKE' })
-  @IsNotEmpty({ message: 'Reação é obrigatória' })
+ 
   reaction!: FeedbackType;
 
   @ApiProperty({
