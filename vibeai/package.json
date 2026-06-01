@@ -1,7 +1,7 @@
 {
   "name": "vibeai",
   "version": "1.0.0",
-  "main": "index.ts",
+  "main": "expo-router/entry",
   "dependencies": {
     "expo": "~56.0.8",
     "expo-constants": "~56.0.16",
@@ -17,6 +17,8 @@
     "react-native-reanimated": "4.3.1",
     "react-native-safe-area-context": "~5.7.0",
     "react-native-screens": "4.25.2",
+    "react-native-svg": "15.15.4",
+    "react-native-worklets": "0.8.3",
     "zustand": "^5.0.14"
   },
   "devDependencies": {
