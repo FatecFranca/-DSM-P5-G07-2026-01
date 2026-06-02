@@ -4,7 +4,7 @@ import { DailyVibesJob } from './daily-vibes.job';
 import { CleanupTokensJob } from './cleanup-tokens.job';
 import { PrismaService } from '../prisma/prisma.service';
 import { PlaylistGeneratorService } from '../recommendations/services/playlist-generator.service';
-import { FeedbackService } from '../recommendations/services/feedback.service';
+
 import { MLService } from '../recommendations/services/ml.service';
 import { PlaylistService } from '../recommendations/services/playlist.service';
 
@@ -24,7 +24,6 @@ import { PlaylistService } from '../recommendations/services/playlist.service';
     PrismaService,
     PlaylistGeneratorService,
     PlaylistService,
-    FeedbackService,
     MLService,
   ],
   exports: [DailyVibesJob, CleanupTokensJob],

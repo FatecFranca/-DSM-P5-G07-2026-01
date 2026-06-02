@@ -414,11 +414,7 @@ export class UsersService {
 
       // RN30: Anonimizar dados sensíveis
       // Desassociar feedbacks do usuário (deixar userId null)
-      await this.prisma.feedback.updateMany({
-        where: { userId: id },
-        data: { userId: null },
-      });
-
+      
       const anonymizedEmail = `deleted_${id}@deleted.local`;
       const anonymizedPassword = await bcrypt.hash(
         randomBytes(16).toString('hex'),

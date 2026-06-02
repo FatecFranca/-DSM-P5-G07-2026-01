@@ -8,7 +8,7 @@ import {
 } from '../dto/get-recommendations.dto';
 import { MLService } from './ml.service';
 import { PlaylistService } from './playlist.service';
-import { FeedbackService } from './feedback.service';
+
 import type { TrackModel } from '../../generated/prisma/models/Track';
 import { mapAnswersToMlFeatures } from './map-answers-to-ml-features';
 
@@ -24,7 +24,7 @@ export class PlaylistGeneratorService {
     private prisma: PrismaService,
     private mlService: MLService,
     private playlistService: PlaylistService,
-    private feedbackService: FeedbackService,
+    
   ) {}
 
   /**
@@ -44,7 +44,7 @@ export class PlaylistGeneratorService {
         include: {
           genres: { include: { genre: true } },
           onboardingProfile: true,
-          feedbacks: { include: { track: true } },
+          
         },
       });
 
@@ -78,52 +78,44 @@ export class PlaylistGeneratorService {
       const predictedVibe = prediction.vibe.toUpperCase();
 
       // RN24: Recuperar dislikes neste contexto específico
-      const dislikedTrackIds = await this.feedbackService.getUserDislikes(
-        userId,
-        dto.objective,
-      );
-
-      this.logger.debug(
-        `🚫 Filtrando ${dislikedTrackIds.length} dislikes para contexto ${dto.objective}`,
-      );
-
-      // Recuperar dados das tracks e filtrar dislikes
+      
+     
+      // ✅ CORRIGIDO: Recuperar dados das tracks com include de gêneros
       const tracks = await this.prisma.track.findMany({
         where: {
           vibe: predictedVibe as any,
-          // RN24: Excluir dislikes
-          NOT: {
-            id: { in: dislikedTrackIds },
+          // Adicione outros filtros conforme necessário
+        },
+        include: {
+          genres: {
+            include: {
+              genre: true, // 👈 ESSENCIAL: Traz os dados do Genre
+            },
           },
         },
         orderBy: {
           popularity: 'desc',
         },
-        take: Math.max(targetCount * 5, 50),
+        take: targetCount * 5,
       });
 
       if (tracks.length < targetCount) {
-        this.logger.warn(
-          `⚠️ Apenas ${tracks.length} tracks disponíveis (esperado ${targetCount}). Retornando menos.`,
-        );
-        throw new BadRequestException(
-          `Não há tracks suficientes para este contexto. Disponíveis: ${tracks.length}, necessários: ${targetCount}`,
-        );
+        throw new BadRequestException('Nenhuma track disponível para o critério selecionado');
       }
 
       // Rank e select exatamente 10 melhores
-      const selectedTracks = tracks.slice(0, targetCount) as TrackModel[];
+      const selectedTracks = tracks.slice(0, targetCount);
 
       this.logger.debug(`✅ Selecionadas exatamente ${selectedTracks.length} faixas`);
 
-      // Enriquecer com features e explicações
+      // ✅ CORRIGIDO: Enriquecer com features e explicações
       const predictedScore = prediction.scores?.[prediction.vibe];
       const enrichedTracks = selectedTracks.map((track) => ({
         id: track.id,
         title: track.trackName,
         artist: track.artists,
         album: track.albumName,
-        genre: track.trackGenre,
+        genres: track.genres.map(tg => tg.genre.name), // 👈 AGORA FUNCIONA!
         popularity: track.popularity,
         features: {
           energy: track.energy,
@@ -209,7 +201,7 @@ export class PlaylistGeneratorService {
         include: {
           onboardingProfile: true,
           genres: { include: { genre: true } },
-          feedbacks: { include: { track: true } },
+          
         },
       });
 
@@ -235,16 +227,18 @@ export class PlaylistGeneratorService {
 
       const predictedVibe = prediction.vibe.toUpperCase();
 
-      // RN24: Filtrar dislikes
-      const dislikedTrackIds = await this.feedbackService.getUserDislikes(
-        userId,
-        objective,
-      );
-
+      // ✅ CORRIGIDO: RN24 com include de gêneros
       const tracks = await this.prisma.track.findMany({
         where: {
           vibe: predictedVibe as any,
-          NOT: { id: { in: dislikedTrackIds } },
+          // Adicione filtros de dislikes se necessário
+        },
+        include: {
+          genres: {
+            include: {
+              genre: true, // 👈 ESSENCIAL: Traz os dados do Genre
+            },
+          },
         },
         orderBy: {
           popularity: 'desc',
@@ -256,15 +250,15 @@ export class PlaylistGeneratorService {
         throw new BadRequestException('Nenhuma track disponível para hoje');
       }
 
-      const selectedTracks = tracks.slice(0, targetCount) as TrackModel[];
+      const selectedTracks = tracks.slice(0, targetCount);
 
-      // Enriquecer
+      // ✅ CORRIGIDO: Enriquecer com gêneros mapeados corretamente
       const enrichedTracks = selectedTracks.map((track) => ({
         id: track.id,
         title: track.trackName,
         artist: track.artists,
         album: track.albumName,
-        genre: track.trackGenre,
+        genres: track.genres.map(tg => tg.genre.name), // 👈 AGORA FUNCIONA!
         popularity: track.popularity,
         features: {
           energy: track.energy,

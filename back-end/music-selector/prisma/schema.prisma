@@ -1,8 +1,8 @@
-// prisma/schema.prisma
+
 
 generator client {
-  provider = "prisma-client"
-  output = "../src/generated/prisma"
+  provider     = "prisma-client"
+  output       = "../src/generated/prisma"
   moduleFormat = "cjs"
 }
 
@@ -15,19 +15,18 @@ datasource db {
 // ─────────────────────────────────────────
 
 model User {
-  id              String    @id @default(uuid())
-  name            String    @db.VarChar(50)
-  email           String    @unique @db.VarChar(100)
-  birthDate       DateTime  @map("birth_date") @db.Date
-  passwordHash    String    @map("password_hash")
-  onboardingDone  Boolean   @default(false) @map("onboarding_done")
-  createdAt       DateTime  @default(now()) @map("created_at")
-  updatedAt       DateTime  @updatedAt @map("updated_at")
+  id             String   @id @default(uuid())
+  name           String   @db.VarChar(50)
+  email          String   @unique @db.VarChar(100)
+  birthDate      DateTime @map("birth_date") @db.Date
+  passwordHash   String   @map("password_hash")
+  onboardingDone Boolean  @default(false) @map("onboarding_done")
+  createdAt      DateTime @default(now()) @map("created_at")
+  updatedAt      DateTime @updatedAt @map("updated_at")
 
   onboardingProfile OnboardingProfile?
   genres            UserGenre[]
   playlists         Playlist[]
-  feedbacks         Feedback[]
 
   @@map("users")
 }
@@ -37,12 +36,12 @@ model User {
 // ─────────────────────────────────────────
 
 model PasswordResetToken {
-  id        String   @id @default(cuid())
-  email     String   @db.VarChar(100)
-  token     String   @unique  // Hash do token enviado por email
-  expiresAt DateTime @map("expires_at")
-  usedAt    DateTime? @map("used_at")  // Para auditoria LGPD
-  createdAt DateTime @default(now()) @map("created_at")
+  id        String    @id @default(cuid())
+  email     String    @db.VarChar(100)
+  token     String    @unique
+  expiresAt DateTime  @map("expires_at")
+  usedAt    DateTime? @map("used_at")
+  createdAt DateTime  @default(now()) @map("created_at")
 
   @@index([email])
   @@index([expiresAt])
@@ -54,16 +53,17 @@ model PasswordResetToken {
 // ─────────────────────────────────────────
 
 model OnboardingProfile {
-  id               String         @id @default(uuid())
-  userId           String         @unique @map("user_id")
+  id               String          @id @default(uuid())
+  userId           String          @unique @map("user_id")
   audioPreference  AudioPreference @map("audio_preference")
-  danceability     Float          @default(0) @map("danceability")
-  energy           Float          @default(0) @map("energy")
-  valence          Float          @default(0) @map("valence")
-  acousticness     Float          @default(0) @map("acousticness")
-  instrumentalness Float          @default(0) @map("instrumentalness")
-  speechiness      Float          @default(0) @map("speechiness")
-  updatedAt        DateTime       @updatedAt @map("updated_at")
+  danceability     Float           @default(0)
+  energy           Float           @default(0)
+  valence          Float           @default(0)
+  acousticness     Float           @default(0)
+  instrumentalness Float           @default(0)
+  speechiness      Float           @default(0)
+  tempo            Float           @default(0)
+  updatedAt        DateTime        @updatedAt @map("updated_at")
 
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 
@@ -88,6 +88,7 @@ model Genre {
   spotifyKey String @unique @map("spotify_key") @db.VarChar(50)
 
   userGenres UserGenre[]
+  tracks     TrackGenre[]
 
   @@map("genres")
 }
@@ -98,47 +99,58 @@ model UserGenre {
   genreId String @map("genre_id")
 
   user  User  @relation(fields: [userId], references: [id], onDelete: Cascade)
-  genre Genre @relation(fields: [genreId], references: [id])
+  genre Genre @relation(fields: [genreId], references: [id], onDelete: Cascade)
 
   @@unique([userId, genreId])
   @@map("user_genres")
 }
 
 // ─────────────────────────────────────────
-// MÚSICAS (seed do Spotify Dataset)
+// TRACKS
 // ─────────────────────────────────────────
 
 model Track {
-  id                 String   @id @default(uuid())
-  spotifyId          String   @unique @map("spotify_id") @db.VarChar(50)
-  trackName          String   @map("track_name") @db.VarChar(255)
-  artists            String   @db.Text  // Separados por ";"
-  albumName          String   @map("album_name") @db.VarChar(255)
-  popularity         Int
-  durationMs         Int      @map("duration_ms")
-  explicit           Boolean  @default(false)
-  vibe               Vibe
-  energy             Float    // 0.0 a 1.0
-  valence            Float    // 0.0 a 1.0
-  danceability       Float    // 0.0 a 1.0
-  acousticness       Float    // 0.0 a 1.0
-  instrumentalness   Float    // 0.0 a 1.0
-  speechiness        Float    // 0.0 a 1.0
-  liveness           Float    // 0.0 a 1.0
-  loudness           Float    // em dB
-  tempo              Float    // BPM
-  key                Int      // -1 a 11 (C = 0, C♯/D♭ = 1, etc)
-  mode               Int      // 0 = minor, 1 = major
-  timeSignature      Int      @map("time_signature")  // 3 a 7
-  trackGenre         String   @map("track_genre") @db.VarChar(100)
-  createdAt          DateTime @default(now()) @map("created_at")
+  id               String  @id @default(uuid())
+  spotifyId        String  @unique @map("spotify_id") @db.VarChar(50)
+  trackName        String  @map("track_name") @db.VarChar(255)
+  artists          String  @db.Text
+  albumName        String  @map("album_name") @db.VarChar(255)
+  popularity       Int
+  durationMs       Int     @map("duration_ms")
+  explicit         Boolean @default(false)
 
+  vibe             Vibe
+  energy           Float
+  valence          Float
+  danceability     Float
+  acousticness     Float
+  instrumentalness Float
+  speechiness      Float
+  liveness         Float
+  loudness         Float
+  tempo            Float
+  key              Int
+  mode             Int
+  timeSignature    Int     @map("time_signature")
+
+  createdAt DateTime @default(now()) @map("created_at")
+
+  genres         TrackGenre[]
   playlistTracks PlaylistTrack[]
-  feedbacks      Feedback[]
 
-  @@index([trackGenre])
   @@index([vibe])
   @@map("tracks")
+}
+
+model TrackGenre {
+  trackId String @map("track_id")
+  genreId String @map("genre_id")
+
+  track Track @relation(fields: [trackId], references: [id], onDelete: Cascade)
+  genre Genre @relation(fields: [genreId], references: [id], onDelete: Cascade)
+
+  @@id([trackId, genreId])
+  @@map("track_genres")
 }
 
 // ─────────────────────────────────────────
@@ -168,28 +180,10 @@ model PlaylistTrack {
   position   Int
 
   playlist Playlist @relation(fields: [playlistId], references: [id], onDelete: Cascade)
-  track    Track    @relation(fields: [trackId], references: [id])
+  track    Track    @relation(fields: [trackId], references: [id], onDelete: Cascade)
 
   @@unique([playlistId, position])
   @@map("playlist_tracks")
-}
-
-// ─────────────────────────────────────────
-// FEEDBACK (Like / Dislike)
-// ─────────────────────────────────────────
-
-model Feedback {
-  id               String   @id @default(uuid())
-  userId           String?  @map("user_id")   // nullable para anonimização (RN30)
-  trackId          String   @map("track_id")
-  reaction         Reaction
-  objectiveContext Objective @map("objective_context")
-  createdAt        DateTime @default(now()) @map("created_at")
-
-  user  User?  @relation(fields: [userId], references: [id], onDelete: SetNull)
-  track Track  @relation(fields: [trackId], references: [id])
-
-  @@map("feedbacks")
 }
 
 // ─────────────────────────────────────────
@@ -223,8 +217,8 @@ enum Mood {
 }
 
 enum PlaylistType {
-  AUTOMATIC   // Vibes Diárias
-  ON_DEMAND   // Criar Minha Vibe
+  AUTOMATIC
+  ON_DEMAND
 
   @@map("playlist_type")
 }
@@ -240,9 +234,3 @@ enum Vibe {
   @@map("vibe")
 }
 
-enum Reaction {
-  LIKE
-  DISLIKE
-
-  @@map("reaction")
-}

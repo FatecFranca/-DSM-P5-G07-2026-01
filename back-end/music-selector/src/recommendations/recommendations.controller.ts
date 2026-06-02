@@ -14,7 +14,7 @@ import { ApiTags, ApiOperation, ApiResponse, ApiBearerAuth, ApiParam, ApiQuery }
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { RecommendationsService } from './recommendations.service';
 import { GetRecommendationsDto } from './dto/get-recommendations.dto';
-import { SaveFeedbackDto } from './dto/save-feedback.dto';
+
 
 @Controller('api/recommendations')
 @UseGuards(JwtAuthGuard)
@@ -177,14 +177,7 @@ export class RecommendationsController {
     description: 'Histórico de feedback',
     isArray: true,
   })
-  async getUserFeedback(
-    @Request() req,
-    @Query('limit') limit?: number,
-  ) {
-    this.logger.log(`Recuperando histórico de feedback do usuário ${req.user.id}`);
-    return this.recommendationsService.getUserFeedbackHistory(req.user.id, limit);
-  }
-
+  
   /**
    * GET /api/recommendations/feedback/stats
    * Recuperar estatísticas de feedback
@@ -205,50 +198,13 @@ export class RecommendationsController {
       },
     },
   })
-  async getUserFeedbackStats(@Request() req) {
-    this.logger.log(`Recuperando estatísticas de feedback do usuário ${req.user.id}`);
-    return this.recommendationsService.getUserFeedbackStats(req.user.id);
-  }
-
+ 
   /**
    * POST /api/recommendations/feedback
    * RN23-RN24: Registrar feedback (like/dislike)
    */
-  @Post('feedback')
-  @ApiOperation({
-    summary: 'Registrar feedback de música',
-    description: 'RN23-RN24: Registra like/dislike e bloqueia música em contexto (dislike). Melhora futuras recomendações',
-  })
-  @ApiResponse({
-    status: 201,
-    description: 'Feedback registrado com sucesso',
-    schema: {
-      example: {
-        id: 'feedback_uuid',
-        userId: 'user_uuid',
-        trackId: 'track_uuid',
-        reaction: 'LIKE',
-        objectiveContext: 'FOCUS',
-        createdAt: '2026-05-14T12:00:00Z',
-      },
-    },
-  })
-  @ApiResponse({ status: 400, description: 'Dados de feedback inválidos' })
-  async recordFeedback(
-    @Request() req,
-    @Body() dto: SaveFeedbackDto,
-  ) {
-    this.logger.log(
-      `Registrando ${dto.reaction} do usuário ${req.user.id} para track ${dto.trackId}`,
-    );
-    return this.recommendationsService.recordFeedback(
-      req.user.id,
-      dto.trackId,
-      dto.reaction,
-      dto.objectiveContext,
-    );
-  }
-
+  
+  
   /**
    * GET /api/recommendations/:playlistId
    * Recuperar detalhes de uma playlist específica

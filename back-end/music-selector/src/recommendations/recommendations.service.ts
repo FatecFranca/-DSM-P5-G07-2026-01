@@ -2,7 +2,7 @@ import { Injectable, Logger } from '@nestjs/common';
 import { GetRecommendationsDto } from './dto/get-recommendations.dto';
 import { PlaylistGeneratorService } from './services/playlist-generator.service';
 import { PlaylistService } from './services/playlist.service';
-import { FeedbackService } from './services/feedback.service';
+
 
 /**
  * RecommendationsService: Orquestrador principal
@@ -15,7 +15,6 @@ export class RecommendationsService {
   constructor(
     private playlistGeneratorService: PlaylistGeneratorService,
     private playlistService: PlaylistService,
-    private feedbackService: FeedbackService,
   ) {}
 
   /**
@@ -56,34 +55,9 @@ export class RecommendationsService {
   /**
    * RN23-RN24: Registrar feedback
    */
-  async recordFeedback(
-    userId: string,
-    trackId: string,
-    reaction: 'LIKE' | 'DISLIKE',
-    objectiveContext: string,
-  ) {
-    return this.feedbackService.recordFeedback(
-      userId,
-      trackId,
-      reaction,
-      objectiveContext,
-    );
-  }
+ 
 
-  /**
-   * Recuperar histórico de feedback do usuário
-   */
-  async getUserFeedbackHistory(userId: string, limit: number = 50) {
-    return this.feedbackService.getUserFeedbackHistory(userId, limit);
-  }
-
-  /**
-   * Recuperar estatísticas de feedback
-   */
-  async getUserFeedbackStats(userId: string) {
-    return this.feedbackService.getUserFeedbackStats(userId);
-  }
-
+  
   /**
    * Deletar playlist
    */
@@ -94,7 +68,4 @@ export class RecommendationsService {
   /**
    * Limpar feedbacks ao deletar conta
    */
-  async clearUserFeedback(userId: string) {
-    return this.feedbackService.clearUserFeedback(userId);
-  }
 }
