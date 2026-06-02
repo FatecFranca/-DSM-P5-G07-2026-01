@@ -20,16 +20,16 @@ import { ApiProperty } from '@nestjs/swagger';
  */
 export class CompleteOnboardingDto {
   @ApiProperty({
-    example: ['pop', 'rock', 'indie'],
+    example: ['61601e24-5752-49e3-b7e8-8c7ed86c8d33', '61601e24-5752-49e3-b7e8-8c7ed86c8d33', '61601e24-5752-49e3-b7e8-8c7ed86c8d33'],
     description: 'RN11: Lista de 1-5 gêneros (cold start mitigation)',
     type: [String],
     minItems: 1,
     maxItems: 5,
   })
   @IsArray({ message: '❌ Gêneros devem ser uma lista' })
-  @ArrayMinSize(1, { message: '❌ Selecione pelo menos 1 gênero (RN11)' })
+  @ArrayMinSize(1, { message: '❌ Selecione pelo menos 1 id de gênero (RN11)' })
   @ArrayMaxSize(5, { message: '❌ Máximo 5 gêneros (RN11)' })
-  @IsString({ each: true, message: '❌ Cada gênero deve ser texto' })
+  @IsString({ each: true, message: '❌ Cada gênero deve ser texto ' })
   @Matches(/^[a-zA-Z0-9_-]+$/, {
     each: true,
     message: '❌ Gênero com formato inválido',

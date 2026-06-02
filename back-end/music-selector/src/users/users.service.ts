@@ -278,8 +278,9 @@ export class UsersService {
         userId,
       };
     } catch (error: any) {
-      throw new InternalServerErrorException('Erro ao completar onboarding');
-    }
+  console.error('ERRO ONBOARDING:', error);
+  throw error;
+}
   }
 
   /**
