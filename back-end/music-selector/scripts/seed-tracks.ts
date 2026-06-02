@@ -230,6 +230,7 @@ async function main() {
 
     console.log(
       `✅ ${Math.min(i + BATCH_SIZE, records.length)} / ${records.length} músicas processadas`
+      
     );
   }
 

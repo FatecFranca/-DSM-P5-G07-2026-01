@@ -157,58 +157,7 @@ export class RecommendationsController {
     return this.recommendationsService.getUserPlaylistHistory(req.user.id, limit);
   }
 
-  /**
-   * GET /api/recommendations/feedback
-   * Recuperar histórico de feedback do usuário
-   */
-  @Get('feedback')
-  @ApiOperation({
-    summary: 'Histórico de feedback',
-    description: 'RN23-RN24: Retorna histórico de likes/dislikes do usuário',
-  })
-  @ApiQuery({
-    name: 'limit',
-    required: false,
-    type: Number,
-    description: 'Limite de resultados (padrão: 50)',
-  })
-  @ApiResponse({
-    status: 200,
-    description: 'Histórico de feedback',
-    isArray: true,
-  })
-  
-  /**
-   * GET /api/recommendations/feedback/stats
-   * Recuperar estatísticas de feedback
-   */
-  @Get('feedback/stats')
-  @ApiOperation({
-    summary: 'Estatísticas de feedback',
-    description: 'Retorna análise de padrões de likes/dislikes por contexto',
-  })
-  @ApiResponse({
-    status: 200,
-    description: 'Estatísticas de feedback',
-    schema: {
-      example: {
-        totalLikes: 42,
-        totalDislikes: 8,
-        likesByObjective: { FOCUS: 20, RELAX: 15, WORKOUT: 7 },
-      },
-    },
-  })
  
-  /**
-   * POST /api/recommendations/feedback
-   * RN23-RN24: Registrar feedback (like/dislike)
-   */
-  
-  
-  /**
-   * GET /api/recommendations/:playlistId
-   * Recuperar detalhes de uma playlist específica
-   */
   @Get(':playlistId')
   @ApiParam({
     name: 'playlistId',
