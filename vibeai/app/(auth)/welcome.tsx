@@ -2,23 +2,44 @@ import { View, Text, StyleSheet, Pressable } from 'react-native';
 import { router } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { LinearGradient } from 'expo-linear-gradient';
+import { BlurView } from 'expo-blur';
+import Svg, { Path } from 'react-native-svg';
+import { useFonts, Inter_400Regular, Inter_700Bold, Inter_800ExtraBold } from '@expo-google-fonts/inter';
 import { colors, spacing, radius, fontSize } from '@/constants/theme';
 
+function VibeIcon() {
+  return (
+    <Svg width={32} height={32} viewBox="0 0 24 24" fill="white">
+      <Path d="M12 2C6.477 2 2 6.477 2 12s4.477 10 10 10 10-4.477 10-10S17.523 2 12 2zm0 14.5c-2.485 0-4.5-2.015-4.5-4.5S9.515 7.5 12 7.5s4.5 2.015 4.5 4.5-2.015 4.5-4.5 4.5zm0-7a2.5 2.5 0 100 5 2.5 2.5 0 000-5z" />
+    </Svg>
+  );
+}
+
 export default function WelcomeScreen() {
+  const [fontsLoaded] = useFonts({
+    Inter_400Regular,
+    Inter_700Bold,
+    Inter_800ExtraBold,
+  });
+
+  if (!fontsLoaded) return null;
+
   return (
     <View style={styles.container}>
 
       {/* Gradiente topo */}
       <LinearGradient
-        colors={['rgba(124,58,237,0.20)', 'transparent']}
+        colors={['rgba(124,58,237,0.35)', 'transparent']}
         style={styles.gradientTop}
       />
 
-      {/* Brilho ciano top-right */}
-      <View style={styles.glowCyan} />
+      {/* Brilho ciano top-right com blur */}
+      <BlurView intensity={80} style={styles.glowCyan} />
+      <View style={styles.glowCyanCore} />
 
-      {/* Brilho rosa bottom-left */}
-      <View style={styles.glowPink} />
+      {/* Brilho rosa bottom-left com blur */}
+      <BlurView intensity={80} style={styles.glowPink} />
+      <View style={styles.glowPinkCore} />
 
       <SafeAreaView style={styles.safeArea}>
         <View style={styles.content}>
@@ -31,7 +52,7 @@ export default function WelcomeScreen() {
               end={{ x: 1, y: 0 }}
               style={styles.logoBox}
             >
-              <Text style={styles.logoIcon}>♪</Text>
+              <VibeIcon />
             </LinearGradient>
           </View>
 
@@ -84,26 +105,43 @@ const styles = StyleSheet.create({
     top: 0,
     left: 0,
     right: 0,
-    height: '66%',
+    height: '60%',
   },
   glowCyan: {
     position: 'absolute',
-    top: -128,
-    right: -128,
-    width: 384,
-    height: 384,
-    borderRadius: 192,
-    backgroundColor: 'rgba(34,211,238,0.20)',
-    // blur não existe no RN nativo — simulamos com opacidade e tamanho
+    top: -120,
+    right: -120,
+    width: 360,
+    height: 360,
+    borderRadius: 180,
+    overflow: 'hidden',
+  },
+  glowCyanCore: {
+    position: 'absolute',
+    top: -120,
+    right: -120,
+    width: 360,
+    height: 360,
+    borderRadius: 180,
+    backgroundColor: 'rgba(34,211,238,0.22)',
   },
   glowPink: {
     position: 'absolute',
-    bottom: -128,
-    left: -128,
-    width: 384,
-    height: 384,
-    borderRadius: 192,
-    backgroundColor: 'rgba(244,114,182,0.20)',
+    bottom: -120,
+    left: -120,
+    width: 360,
+    height: 360,
+    borderRadius: 180,
+    overflow: 'hidden',
+  },
+  glowPinkCore: {
+    position: 'absolute',
+    bottom: -120,
+    left: -120,
+    width: 360,
+    height: 360,
+    borderRadius: 180,
+    backgroundColor: 'rgba(244,114,182,0.18)',
   },
   safeArea: {
     flex: 1,
@@ -116,32 +154,30 @@ const styles = StyleSheet.create({
     paddingBottom: spacing.xxl,
   },
   logoWrapper: {
-    marginBottom: spacing.lg,
+    marginBottom: spacing.xl,
   },
   logoBox: {
-    width: 64,
-    height: 64,
-    borderRadius: radius.md,
+    width: 72,
+    height: 72,
+    borderRadius: 20,
     alignItems: 'center',
     justifyContent: 'center',
   },
-  logoIcon: {
-    fontSize: 32,
-    color: colors.textPrimary,
-  },
   title: {
+    fontFamily: 'Inter_800ExtraBold',
     fontSize: fontSize.xxl,
-    fontWeight: '800',
     color: colors.textPrimary,
     textAlign: 'center',
     marginBottom: spacing.sm,
   },
   subtitle: {
+    fontFamily: 'Inter_400Regular',
     fontSize: fontSize.md,
     color: colors.textSecondary,
     textAlign: 'center',
     marginBottom: spacing.xl,
     lineHeight: 24,
+    maxWidth: 280,
   },
   buttons: {
     width: '100%',
@@ -149,31 +185,32 @@ const styles = StyleSheet.create({
   },
   btnPrimary: {
     width: '100%',
-    borderRadius: radius.md,
+    borderRadius: radius.full,
     overflow: 'hidden',
   },
   btnGradient: {
-    paddingVertical: spacing.md,
+    paddingVertical: spacing.md + 2,
     alignItems: 'center',
-    borderRadius: radius.md,
+    borderRadius: radius.full,
   },
   btnPrimaryText: {
+    fontFamily: 'Inter_700Bold',
     color: colors.textPrimary,
     fontSize: fontSize.md,
-    fontWeight: '700',
   },
   btnSecondary: {
     width: '100%',
-    borderRadius: radius.md,
+    borderRadius: radius.full,
     borderWidth: 1,
-    borderColor: colors.primary,
-    paddingVertical: spacing.md,
+    borderColor: 'rgba(124,58,237,0.5)',
+    paddingVertical: spacing.md + 2,
     alignItems: 'center',
+    backgroundColor: 'rgba(124,58,237,0.08)',
   },
   btnSecondaryText: {
+    fontFamily: 'Inter_700Bold',
     color: colors.primary,
     fontSize: fontSize.md,
-    fontWeight: '700',
   },
   pressed: {
     opacity: 0.8,
