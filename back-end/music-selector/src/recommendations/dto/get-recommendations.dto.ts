@@ -1,15 +1,22 @@
-import { IsEnum, IsNotEmpty, IsOptional, Min, Max } from 'class-validator';
+import { IsEnum, IsNotEmpty, IsOptional, Min, Max, IsBoolean } from 'class-validator';
 import { ApiProperty } from '@nestjs/swagger';
 
 /**
- * RN18: Objetivo da Playlist
- * Define o contexto de uso: Foco, Treino, Relaxamento ou Mood Boost
+ * RN18: Preferência de Áudio
+ * Define o tipo de faixa predominante na playlist
  */
-export enum ObjectiveType {
-  FOCUS = 'FOCUS',        // Foco/Produtividade
-  WORKOUT = 'WORKOUT',    // Treino/Exercício
-  RELAX = 'RELAX',        // Relaxamento/Meditação
-  MOOD_BOOST = 'MOOD_BOOST', // Levantar o ânimo
+export enum Objective {
+  FOCUS,
+  WORKOUT,
+  RELAX,
+  MOOD_BOOST
+}
+
+
+export enum AudioPreference {
+  INSTRUMENTAL = 'INSTRUMENTAL', // Preferência por músicas sem vocais
+  VOCAL = 'VOCAL',               // Preferência por músicas com vocais
+  MIXED = 'MIXED',               // Sem preferência, pode incluir ambos
 }
 
 /**
@@ -40,16 +47,16 @@ export enum EnergyLevelType {
  */
 export class GetRecommendationsDto {
   @ApiProperty({
-    example: 'FOCUS',
-    description: 'RN18: Objetivo - Contexto de uso da playlist (Foco, Treino, Relaxamento ou Mood Boost)',
-    enum: ObjectiveType,
-    enumName: 'ObjectiveType',
+    example: 'INSTRUMENTAL',
+    description: 'RN18: Preferência de Áudio - Tipo de faixa estruturada vinda do banco via FastAPI (INSTRUMENTAL, VOCAL, MIXED)',
+    enum: AudioPreference,
+    enumName: 'AudioPreference',
   })
-  @IsEnum(ObjectiveType, {
-    message: 'Objetivo deve ser um de: FOCUS, WORKOUT, RELAX, MOOD_BOOST',
+  @IsEnum(AudioPreference, {
+    message: 'Audio Preference deve ser um de: INSTRUMENTAL, VOCAL, MIXED',
   })
-  @IsNotEmpty({ message: 'Objetivo é obrigatório' })
-  objective!: ObjectiveType;
+  @IsNotEmpty({ message: 'Preferência de áudio é obrigatória' })
+  audioPreference!: AudioPreference; // ◄ CORRIGIDO: Nome correto alinhado ao Enum e ao FastAPI
 
   @ApiProperty({
     example: 'HAPPY',
@@ -80,7 +87,8 @@ export class GetRecommendationsDto {
     description: 'RN22: Quantidade de faixas - FIXO em 10 para garantir consistência. Não alterar.',
     minimum: 10,
     maximum: 10,
-    readOnly: true,
+    default: 10,
+    required: false,
   })
   @IsOptional()
   @Min(10, { message: 'Deve ser exatamente 10 faixas (RN22)' })
@@ -91,7 +99,9 @@ export class GetRecommendationsDto {
     example: true,
     description: 'Incluir explicações detalhadas para cada faixa (DNA + motivo)',
     required: false,
+    default: true,
   })
   @IsOptional()
+  @IsBoolean({ message: 'includeExplanation deve ser um valor booleano' })
   includeExplanation?: boolean = true;
 }

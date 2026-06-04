@@ -90,7 +90,6 @@ model Playlist {
   id          String       @id @default(uuid())
   userId      String       @map("user_id")
   name        String       @db.VarChar(100)
-  objective   Objective
   energyLevel EnergyLevel  @map("energy_level")
   mood        Mood
   type        PlaylistType
@@ -119,13 +118,14 @@ model PlaylistTrack {
 // ENUMS
 // ─────────────────────────────────────────
 
-enum Objective {
-  FOCUS
-  WORKOUT
-  RELAX
-  MOOD_BOOST
 
-  @@map("objective")
+
+enum AudioPreference {
+ MIXED
+ INSTRUMENTAL
+ VOCAL
+
+  @@map("audio_preference")
 }
 
 enum EnergyLevel {

@@ -39,7 +39,7 @@ export class RecommendationsController {
   @Post('generate')
   @ApiOperation({
     summary: 'Gerar recomendações personalizadas ("Criar Minha Vibe")',
-    description: 'RN17-RN22: Cria playlist customizada com 3 parâmetros (Objetivo + Energia + Humor). Retorna EXATAMENTE 10 faixas com DNA musical (Energy, Valence, Danceability + features técnicas)',
+    description: 'RN17-RN22: Cria playlist customizada com 3 parâmetros recebidos do FastAPI (Preferência de Áudio + Energia + Humor). Retorna EXATAMENTE 10 faixas com DNA musical (Energy, Valence, Danceability + features técnicas)',
   })
   @ApiResponse({
     status: 200,
@@ -47,11 +47,11 @@ export class RecommendationsController {
     schema: {
       example: {
         playlistId: 'uuid',
-        playlistName: 'My Focus Vibe',
-        objective: 'FOCUS',
+        playlistName: 'Instrumental Happy Vibe',
+        audioPreference: 'INSTRUMENTAL', // ◄ ATUALIZADO: Substituído objective por audioPreference
         mood: 'HAPPY',
         energyLevel: 'HIGH',
-        generatedAt: '2026-05-20T10:30:00Z',
+        generatedAt: '2026-06-04T11:30:00Z',
         tracks: [
           {
             id: 'track-1',
@@ -60,26 +60,38 @@ export class RecommendationsController {
             album: 'Album Name',
             genre: 'Electronic',
             popularity: 75,
-            features: { energy: 0.75, valence: 0.65, danceability: 0.7, acousticness: 0.1, instrumentalness: 0.05, speechiness: 0.08, tempo: 120 },
-            explanation: '75% de energia, perfeito para seu foco',
-            reason: 'Sugerida por ter valência alta (motivante)',
+            features: { 
+              energy: 0.75, 
+              valence: 0.65, 
+              danceability: 0.7, 
+              acousticness: 0.1, 
+              instrumentalness: 0.85, 
+              speechiness: 0.03, 
+              tempo: 120 
+            },
+            explanation: 'Instrumental conforme preferência, energia alta conforme solicitado',
+            reason: 'Sugerida por ter valência alta (motivante) e alta taxa instrumental',
           },
         ],
         totalTracks: 10,
         mlModelScore: 0.89,
-        explanation: 'Playlist "My Focus Vibe" gerada com base em suas preferências',
+        explanation: 'Playlist "Instrumental Happy Vibe" gerada com base em suas preferências',
       },
     },
   })
-  @ApiResponse({ status: 400, description: 'Parâmetros inválidos ou onboarding não completado' })
+  @ApiResponse({ status: 400, description: 'Parâmetros inválidos ou dados do FastAPI ausentes' })
   @ApiResponse({ status: 401, description: 'Token inválido ou expirado' })
-  @ApiResponse({ status: 422, description: 'Objetivo/Energia/Humor inválidos' })
+  @ApiResponse({ status: 422, description: 'Preferência de Áudio/Energia/Humor inválidos' })
+  
+  
+  
+  // ◄ ATUALIZADO
   async getRecommendations(
     @Request() req,
     @Body() dto: GetRecommendationsDto,
   ) {
     this.logger.log(
-      `🎵 Gerando recomendações para usuário ${req.user.id}: Objetivo=${dto.objective}, Energia=${dto.energyLevel}, Humor=${dto.mood}`,
+      `🎵 Gerando recomendações para usuário ${req.user.id}: Preferencia de Audio=${dto.audioPreference}, Energia=${dto.energyLevel}, Humor=${dto.mood}`,
     );
     
     // Validar que exatamente 10 faixas são solicitadas (RN22)

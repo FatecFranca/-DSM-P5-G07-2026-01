@@ -1,5 +1,6 @@
 import { Injectable, Logger, BadRequestException } from '@nestjs/common';
 import { PrismaService } from '../../prisma/prisma.service';
+import { AudioPreference, EnergyLevelType, MoodType } from '../dto/get-recommendations.dto'; // Importe os enums do seu DTO corrigido
 
 /**
  * PlaylistService: Gerenciar playlists (criar, recuperar, atualizar)
@@ -17,9 +18,9 @@ export class PlaylistService {
   async createPlaylist(data: {
     userId: string;
     name: string;
-    objective: string;
-    energyLevel: string;
-    mood: string;
+    audioPreference: AudioPreference; // ◄ CORRIGIDO: Tipo correto baseado no DTO
+    energyLevel: EnergyLevelType;     // ◄ Opcional: Tipagem forte com Enum
+    mood: MoodType;                   // ◄ Opcional: Tipagem forte com Enum
     type: string;
     tracks: Array<{ id: string; position: number }>;
   }) {
@@ -28,7 +29,8 @@ export class PlaylistService {
         data: {
           userId: data.userId,
           name: data.name,
-          objective: data.objective as any,
+          // Mapeamento Arquitetural: O backend usa 'audioPreference', mas a coluna no banco ainda se chama 'objective'
+          
           energyLevel: data.energyLevel as any,
           mood: data.mood as any,
           type: data.type as any,

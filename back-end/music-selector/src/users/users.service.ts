@@ -38,7 +38,7 @@ export class UsersService {
           email: dto.email,
           birthDate: new Date(dto.dateOfBirth),
           passwordHash,
-          onboardingDone: false,
+         
         },
       });
 

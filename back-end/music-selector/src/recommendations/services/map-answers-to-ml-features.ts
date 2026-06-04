@@ -1,9 +1,9 @@
-import { EnergyLevelType, MoodType, ObjectiveType } from '../dto/get-recommendations.dto';
+import { EnergyLevelType, MoodType,  } from '../dto/get-recommendations.dto';
 
 type AudioPreference = 'INSTRUMENTAL' | 'VOCAL' | 'MIXED';
 
 export interface UserAnswers {
-  objective: ObjectiveType;
+  
   mood: MoodType;
   energyLevel: EnergyLevelType;
   audioPreference?: AudioPreference;
@@ -34,47 +34,7 @@ export function mapAnswersToMlFeatures(answers: UserAnswers): MlFeatures {
     tempo: 115,
   };
 
-  switch (answers.objective) {
-    case ObjectiveType.FOCUS:
-      features.danceability = 0.35;
-      features.energy = 0.45;
-      features.valence = 0.5;
-      features.acousticness = 0.55;
-      features.instrumentalness = 0.7;
-      features.speechiness = 0.03;
-      features.tempo = 100;
-      break;
-
-    case ObjectiveType.WORKOUT:
-      features.danceability = 0.75;
-      features.energy = 0.85;
-      features.valence = 0.65;
-      features.acousticness = 0.15;
-      features.instrumentalness = 0.1;
-      features.speechiness = 0.06;
-      features.tempo = 140;
-      break;
-
-    case ObjectiveType.RELAX:
-      features.danceability = 0.3;
-      features.energy = 0.25;
-      features.valence = 0.45;
-      features.acousticness = 0.8;
-      features.instrumentalness = 0.35;
-      features.speechiness = 0.03;
-      features.tempo = 80;
-      break;
-
-    case ObjectiveType.MOOD_BOOST:
-      features.danceability = 0.75;
-      features.energy = 0.7;
-      features.valence = 0.85;
-      features.acousticness = 0.25;
-      features.instrumentalness = 0.1;
-      features.speechiness = 0.06;
-      features.tempo = 125;
-      break;
-  }
+  
 
   switch (answers.mood) {
     case MoodType.HAPPY:

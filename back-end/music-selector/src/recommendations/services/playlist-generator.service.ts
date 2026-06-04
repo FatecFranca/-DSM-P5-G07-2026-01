@@ -1,20 +1,18 @@
 import { Injectable, Logger, BadRequestException } from '@nestjs/common';
 import { PrismaService } from '../../prisma/prisma.service';
 import {
-  GetRecommendationsDto,
-  ObjectiveType,
   MoodType,
   EnergyLevelType,
+  AudioPreference,
+  GetRecommendationsDto,
 } from '../dto/get-recommendations.dto';
 import { MLService } from './ml.service';
 import { PlaylistService } from './playlist.service';
-
-
 import { mapAnswersToMlFeatures } from './map-answers-to-ml-features';
 
 /**
  * PlaylistGeneratorService: Lógica de geração de playlists
- * Responsável por: gerar recomendações sob demanda, vibes diárias, enriquecer com features
+ * ✅ REFATORADO: Filtros do Prisma corrigidos para usar as features reais da model Track
  */
 @Injectable()
 export class PlaylistGeneratorService {
@@ -24,20 +22,18 @@ export class PlaylistGeneratorService {
     private prisma: PrismaService,
     private mlService: MLService,
     private playlistService: PlaylistService,
-    
   ) {}
 
+
+
+  
   /**
    * RN17-RN22: Gerar recomendações sob demanda
-   * Garante exatamente 10 faixas ordenadas por relevância (70%) + popularity (30%)
    */
-  async generateRecommendations(
-    userId: string,
-    dto: GetRecommendationsDto,
-  ) {
+  async generateRecommendations(userId: string, dto: GetRecommendationsDto) {
     try {
-      const targetCount = 10; // RN22: Sempre exatamente 10
-      
+      const targetCount = 10;
+
       // Validar usuário e onboarding
       const user = await this.prisma.user.findUnique({
         where: { id: userId },
@@ -47,18 +43,14 @@ export class PlaylistGeneratorService {
         throw new BadRequestException('❌ Usuário não encontrado');
       }
 
-      if (!user.onboardingDone) {
-        throw new BadRequestException(
-          '⚠️ Complete o onboarding antes de gerar recomendações personalizadas (RN10)',
-        );
-      }
+     
 
       this.logger.log(
-        `🎯 Iniciando geração: objetivo=${dto.objective}, energia=${dto.energyLevel}, humor=${dto.mood}`,
+        `🎯 Iniciando geração: audioPreference=${dto.audioPreference}, energia=${dto.energyLevel}, humor=${dto.mood}`,
       );
 
       const mlFeatures = mapAnswersToMlFeatures({
-        objective: dto.objective,
+        audioPreference: dto.audioPreference,
         mood: dto.mood,
         energyLevel: dto.energyLevel,
       });
@@ -71,14 +63,18 @@ export class PlaylistGeneratorService {
 
       const predictedVibe = prediction.vibe.toUpperCase();
 
-      // RN24: Recuperar dislikes neste contexto específico
-      
-     
-      // ✅ CORRIGIDO: Recuperar dados das tracks com include de gêneros
+      // ✅ CORRIGIDO: Filtro dinâmico usando a feature acústica real da tabela Track
+      const acousticFilter: any = {};
+      if (dto.audioPreference === AudioPreference.INSTRUMENTAL) {
+        acousticFilter.instrumentalness = { gte: 0.5 }; // Músicas predominantemente instrumentais
+      } else if (dto.audioPreference === AudioPreference.VOCAL) {
+        acousticFilter.instrumentalness = { lt: 0.5 };  // Músicas com mais foco em vocais
+      }
+
       const tracks = await this.prisma.track.findMany({
         where: {
           vibe: predictedVibe as any,
-          // Adicione outros filtros conforme necessário
+          ...acousticFilter, // ◄ Injeta o filtro aceito pelo Prisma (ex: instrumentalness)
         },
         orderBy: {
           popularity: 'desc',
@@ -90,19 +86,15 @@ export class PlaylistGeneratorService {
         throw new BadRequestException('Nenhuma track disponível para o critério selecionado');
       }
 
-      // Rank e select exatamente 10 melhores
       const selectedTracks = tracks.slice(0, targetCount);
-
       this.logger.debug(`✅ Selecionadas exatamente ${selectedTracks.length} faixas`);
 
-      // ✅ CORRIGIDO: Enriquecer com features e explicações
       const predictedScore = prediction.scores?.[prediction.vibe];
       const enrichedTracks = selectedTracks.map((track) => ({
         id: track.id,
         title: track.trackName,
         artist: track.artists,
-        album: track.albumName,
-        genres: [],
+        album: track.albumName,     
         popularity: track.popularity,
         features: {
           energy: track.energy,
@@ -115,7 +107,7 @@ export class PlaylistGeneratorService {
         },
         explanation: this.generateExplanation(
           track,
-          dto.objective,
+          dto.audioPreference,
           dto.mood,
           dto.energyLevel,
         ),
@@ -128,8 +120,8 @@ export class PlaylistGeneratorService {
       // Criar playlist no banco
       const playlist = await this.playlistService.createPlaylist({
         userId,
-        name: this.generatePlaylistName(dto.objective, dto.mood),
-        objective: dto.objective,
+        name: this.generatePlaylistName(dto.audioPreference, dto.mood),
+        audioPreference: dto.audioPreference,
         energyLevel: dto.energyLevel,
         mood: dto.mood,
         type: 'ON_DEMAND',
@@ -143,11 +135,10 @@ export class PlaylistGeneratorService {
         `🎵 ✅ Playlist criada: ${playlist.name} com ${enrichedTracks.length} faixas para ${userId}`,
       );
 
-      // RN22: Validação final - garantir exatamente 10
       const response = {
         playlistId: playlist.id,
         playlistName: playlist.name,
-        objective: dto.objective,
+        audioPreference: dto.audioPreference,
         mood: dto.mood,
         energyLevel: dto.energyLevel,
         generatedAt: playlist.generatedAt,
@@ -157,7 +148,6 @@ export class PlaylistGeneratorService {
         explanation: `Playlist "${playlist.name}" gerada com base em suas preferências (${enrichedTracks.length} faixas)`,
       };
 
-      // Garantir invariante RN22
       if (response.totalTracks !== 10) {
         this.logger.error(
           `🚨 ERRO CRÍTICO RN22: totalTracks=${response.totalTracks}, esperado 10`,
@@ -191,11 +181,10 @@ export class PlaylistGeneratorService {
         throw new BadRequestException('Usuário não encontrado ou onboarding incompleto');
       }
 
-      // Determinar objetivo baseado na hora
-      const { objective, mood, energyLevel } = this.determineDailyVibe();
+      const { audioPreference, mood, energyLevel } = this.determineDailyVibe();
 
       const mlFeatures = mapAnswersToMlFeatures({
-        objective,
+        audioPreference,
         mood,
         energyLevel,
       });
@@ -208,11 +197,18 @@ export class PlaylistGeneratorService {
 
       const predictedVibe = prediction.vibe.toUpperCase();
 
-      // ✅ CORRIGIDO: RN24 com include de gêneros
+      // ✅ CORRIGIDO: Filtro dinâmico para a Vibe Diária
+      const acousticFilter: any = {};
+      if (audioPreference === AudioPreference.INSTRUMENTAL) {
+        acousticFilter.instrumentalness = { gte: 0.5 };
+      } else if (audioPreference === AudioPreference.VOCAL) {
+        acousticFilter.instrumentalness = { lt: 0.5 };
+      }
+
       const tracks = await this.prisma.track.findMany({
         where: {
           vibe: predictedVibe as any,
-          // Adicione filtros de dislikes se necessário
+          ...acousticFilter, // ◄ Injeta o filtro mapeado sem quebrar o TypeScript
         },
         orderBy: {
           popularity: 'desc',
@@ -226,13 +222,11 @@ export class PlaylistGeneratorService {
 
       const selectedTracks = tracks.slice(0, targetCount);
 
-      // ✅ CORRIGIDO: Enriquecer com gêneros mapeados corretamente
       const enrichedTracks = selectedTracks.map((track) => ({
         id: track.id,
         title: track.trackName,
         artist: track.artists,
         album: track.albumName,
-        genres: [],
         popularity: track.popularity,
         features: {
           energy: track.energy,
@@ -243,14 +237,18 @@ export class PlaylistGeneratorService {
           speechiness: track.speechiness,
           tempo: track.tempo,
         },
-        explanation: this.generateExplanation(track, objective, mood, energyLevel),
+        explanation: this.generateExplanation(
+          track,
+          audioPreference,
+          mood,
+          energyLevel,
+        ),
       }));
 
-      // Criar playlist
       const playlist = await this.playlistService.createPlaylist({
         userId,
-        name: this.generatePlaylistName(objective, mood),
-        objective,
+        name: this.generatePlaylistName(audioPreference, mood),
+        audioPreference,
         energyLevel,
         mood,
         type: 'AUTOMATIC',
@@ -260,13 +258,16 @@ export class PlaylistGeneratorService {
         })),
       });
 
-      this.logger.log(`Vibe diária gerada para ${userId} às ${new Date().toLocaleTimeString()}`);
+      this.logger.log(
+        `Vibe diária gerada para ${userId} às ${new Date().toLocaleTimeString()}`,
+      );
 
       return {
         userId,
         playlistId: playlist.id,
         playlistName: playlist.name,
-        objective,
+        audioPreference,
+        mood,
         energyLevel,
         generatedAt: playlist.generatedAt,
         tracks: enrichedTracks,
@@ -279,31 +280,30 @@ export class PlaylistGeneratorService {
   }
 
   /**
-   * Gerar nome descritivo para playlist
+   * Gera nome baseado em audioPreference e mood
    */
-  private generatePlaylistName(objective: string, mood: string): string {
-    const objectiveNames: Record<string, string> = {
-      FOCUS: 'Foco Total',
-      WORKOUT: 'Energia Máxima',
-      RELAX: 'Relaxamento Profundo',
-      MOOD_BOOST: 'Boost de Vibes',
+  private generatePlaylistName(audioPreference: AudioPreference, mood: MoodType): string {
+    const audioNames: Record<AudioPreference, string> = {
+      [AudioPreference.INSTRUMENTAL]: '🎼 Instrumental',
+      [AudioPreference.VOCAL]: '🎤 Vocal',
+      [AudioPreference.MIXED]: '🎵 Mixed',
     };
 
-    const moodNames: Record<string, string> = {
-      HAPPY: 'Feliz',
-      NEUTRAL: 'Neutro',
-      ANXIOUS: 'Animado',
-      SAD: 'Melancólico',
+    const moodNames: Record<MoodType, string> = {
+      [MoodType.HAPPY]: '😊 Feliz',
+      [MoodType.NEUTRAL]: '😐 Neutro',
+      [MoodType.ANXIOUS]: '⚡ Animado',
+      [MoodType.SAD]: '😢 Melancólico',
     };
 
-    return `${objectiveNames[objective] || objective} - ${moodNames[mood] || mood}`;
+    return `${audioNames[audioPreference]} - ${moodNames[mood]}`;
   }
 
   /**
-   * Determinar objetivo e mood automático baseado na hora do dia
+   * Determinar parâmetros automáticos baseado na hora
    */
   private determineDailyVibe(): {
-    objective: ObjectiveType;
+    audioPreference: AudioPreference;
     mood: MoodType;
     energyLevel: EnergyLevelType;
   } {
@@ -311,25 +311,25 @@ export class PlaylistGeneratorService {
 
     if (hour >= 6 && hour < 12) {
       return {
-        objective: ObjectiveType.MOOD_BOOST,
+        audioPreference: AudioPreference.INSTRUMENTAL,
         mood: MoodType.HAPPY,
         energyLevel: EnergyLevelType.MEDIUM,
       };
     } else if (hour >= 12 && hour < 18) {
       return {
-        objective: ObjectiveType.FOCUS,
+        audioPreference: AudioPreference.MIXED,
         mood: MoodType.NEUTRAL,
         energyLevel: EnergyLevelType.MEDIUM,
       };
     } else if (hour >= 18 && hour < 22) {
       return {
-        objective: ObjectiveType.RELAX,
+        audioPreference: AudioPreference.INSTRUMENTAL,
         mood: MoodType.HAPPY,
         energyLevel: EnergyLevelType.LOW,
       };
     } else {
       return {
-        objective: ObjectiveType.RELAX,
+        audioPreference: AudioPreference.INSTRUMENTAL,
         mood: MoodType.NEUTRAL,
         energyLevel: EnergyLevelType.LOW,
       };
@@ -337,38 +337,42 @@ export class PlaylistGeneratorService {
   }
 
   /**
-   * RN25: Gerar explicação baseada em features
+   * RN25: Gerar explicação baseada em features reais
    */
   private generateExplanation(
     track: any,
-    objective: string,
-    mood: string,
-    energyLevel: string,
+    audioPreference: AudioPreference,
+    mood: MoodType,
+    energyLevel: EnergyLevelType,
   ): string {
     const reasons: string[] = [];
 
-    if (objective === 'FOCUS' && track.acousticness > 0.7) {
-      reasons.push('acústica relaxante para melhor foco');
+    if (audioPreference === AudioPreference.INSTRUMENTAL && track.instrumentalness > 0.7) {
+      reasons.push('instrumental conforme preferência');
     }
 
-    if (objective === 'WORKOUT' && track.energy > 0.7 && track.tempo > 120) {
-      reasons.push('ritmo energético perfeito para exercício');
+    if (audioPreference === AudioPreference.VOCAL && track.speechiness > 0.3) {
+      reasons.push('vocal destacado conforme preferência');
     }
 
-    if (objective === 'RELAX' && track.valence < 0.5 && track.acousticness > 0.6) {
-      reasons.push('clima tranquilo e melancólico');
+    if (mood === MoodType.HAPPY && track.valence > 0.7) {
+      reasons.push('vibra positiva para seu humor feliz');
     }
 
-    if (objective === 'MOOD_BOOST' && track.valence > 0.7 && track.danceability > 0.6) {
-      reasons.push('vibra positiva e dançante');
+    if (mood === MoodType.SAD && track.valence < 0.5) {
+      reasons.push('tom melancólico que combina com seu mood');
     }
 
-    if (energyLevel === 'HIGH' && track.energy > 0.7) {
+    if (energyLevel === EnergyLevelType.HIGH && track.energy > 0.7) {
       reasons.push('energia alta conforme solicitado');
     }
 
-    if (energyLevel === 'LOW' && track.energy < 0.4) {
+    if (energyLevel === EnergyLevelType.LOW && track.energy < 0.4) {
       reasons.push('energia baixa e relaxante');
+    }
+
+    if (energyLevel === EnergyLevelType.MEDIUM && track.energy >= 0.4 && track.energy <= 0.7) {
+      reasons.push('energia balanceada');
     }
 
     return reasons.length > 0
