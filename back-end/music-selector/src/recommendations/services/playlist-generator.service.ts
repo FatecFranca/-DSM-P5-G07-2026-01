@@ -9,7 +9,7 @@ import {
 import { MLService } from './ml.service';
 import { PlaylistService } from './playlist.service';
 
-import type { TrackModel } from '../../generated/prisma/models/Track';
+
 import { mapAnswersToMlFeatures } from './map-answers-to-ml-features';
 
 /**
@@ -41,11 +41,6 @@ export class PlaylistGeneratorService {
       // Validar usuário e onboarding
       const user = await this.prisma.user.findUnique({
         where: { id: userId },
-        include: {
-          genres: { include: { genre: true } },
-          onboardingProfile: true,
-          
-        },
       });
 
       if (!user) {
@@ -66,7 +61,6 @@ export class PlaylistGeneratorService {
         objective: dto.objective,
         mood: dto.mood,
         energyLevel: dto.energyLevel,
-        audioPreference: user.onboardingProfile?.audioPreference ?? 'MIXED',
       });
 
       const prediction = await this.mlService.predictVibe(mlFeatures);
@@ -85,13 +79,6 @@ export class PlaylistGeneratorService {
         where: {
           vibe: predictedVibe as any,
           // Adicione outros filtros conforme necessário
-        },
-        include: {
-          genres: {
-            include: {
-              genre: true, // 👈 ESSENCIAL: Traz os dados do Genre
-            },
-          },
         },
         orderBy: {
           popularity: 'desc',
@@ -115,7 +102,7 @@ export class PlaylistGeneratorService {
         title: track.trackName,
         artist: track.artists,
         album: track.albumName,
-        genres: track.genres.map(tg => tg.genre.name), // 👈 AGORA FUNCIONA!
+        genres: [],
         popularity: track.popularity,
         features: {
           energy: track.energy,
@@ -198,11 +185,6 @@ export class PlaylistGeneratorService {
       const targetCount = 10;
       const user = await this.prisma.user.findUnique({
         where: { id: userId },
-        include: {
-          onboardingProfile: true,
-          genres: { include: { genre: true } },
-          
-        },
       });
 
       if (!user || !user.onboardingDone) {
@@ -216,7 +198,6 @@ export class PlaylistGeneratorService {
         objective,
         mood,
         energyLevel,
-        audioPreference: user.onboardingProfile?.audioPreference ?? 'MIXED',
       });
 
       const prediction = await this.mlService.predictVibe(mlFeatures);
@@ -232,13 +213,6 @@ export class PlaylistGeneratorService {
         where: {
           vibe: predictedVibe as any,
           // Adicione filtros de dislikes se necessário
-        },
-        include: {
-          genres: {
-            include: {
-              genre: true, // 👈 ESSENCIAL: Traz os dados do Genre
-            },
-          },
         },
         orderBy: {
           popularity: 'desc',
@@ -258,7 +232,7 @@ export class PlaylistGeneratorService {
         title: track.trackName,
         artist: track.artists,
         album: track.albumName,
-        genres: track.genres.map(tg => tg.genre.name), // 👈 AGORA FUNCIONA!
+        genres: [],
         popularity: track.popularity,
         features: {
           energy: track.energy,

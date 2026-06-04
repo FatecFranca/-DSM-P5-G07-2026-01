@@ -27,11 +27,10 @@ interface CsvTrack {
   valence: string;
   tempo: string;
   time_signature: string;
-  track_genre: string;
   vibe: string;
 }
 
-const TEST_MODE = true;
+const TEST_MODE = false;
 const TEST_LIMIT = 1000;
 const BATCH_SIZE = 100;
 
@@ -42,18 +41,6 @@ const pool = new Pool({
 const prisma = new PrismaClient({
   adapter: new PrismaPg(pool),
 });
-
-const genreCache = new Map<string, string>();
-
-function normalizeGenre(value: string): string {
-  if (!value) return 'unknown';
-
-  return value
-    .trim()
-    .toLowerCase()
-    .replace(/\s+/g, '_')
-    .replace(/[^a-z0-9_-]/g, '');
-}
 
 function parseBoolean(value: unknown): boolean {
   return (
@@ -73,65 +60,25 @@ function parseVibe(value: string): Vibe {
   const vibe = value?.trim().toUpperCase();
 
   if (!(vibe in Vibe)) {
-    throw new Error(`Vibe inválida encontrada no CSV: ${value}`);
+    throw new Error(`Vibe invalida encontrada no CSV: ${value}`);
   }
 
   return Vibe[vibe as keyof typeof Vibe];
 }
 
-async function loadGenres() {
-  const genres = await prisma.genre.findMany();
-
-  for (const genre of genres) {
-    genreCache.set(genre.spotifyKey, genre.id);
-  }
-
-  console.log(`🎼 ${genres.length} gêneros carregados no cache`);
-}
-
-async function getOrCreateGenre(rawGenre: string): Promise<string> {
-  const spotifyKey = normalizeGenre(rawGenre);
-  const name = rawGenre?.trim() || 'unknown';
-
-  if (genreCache.has(spotifyKey)) {
-    return genreCache.get(spotifyKey)!;
-  }
-
-  const genre = await prisma.genre.upsert({
-    where: {
-      spotifyKey,
-    },
-    update: {
-      name,
-    },
-    create: {
-      name,
-      spotifyKey,
-    },
-  });
-
-  genreCache.set(spotifyKey, genre.id);
-
-  return genre.id;
-}
-
 async function processTrack(row: CsvTrack) {
-  const genreId = await getOrCreateGenre(row.track_genre);
-
-  const track = await prisma.track.upsert({
+  await prisma.track.upsert({
     where: {
       spotifyId: row.track_id,
     },
     update: {
       trackName: row.track_name || 'Sem nome',
       artists: row.artists || 'Desconhecido',
-      albumName: row.album_name || 'Sem álbum',
+      albumName: row.album_name || 'Sem album',
       popularity: toNumber(row.popularity),
       durationMs: toNumber(row.duration_ms),
       explicit: parseBoolean(row.explicit),
-
       vibe: parseVibe(row.vibe),
-
       danceability: toNumber(row.danceability),
       energy: toNumber(row.energy),
       key: toNumber(row.key),
@@ -149,13 +96,11 @@ async function processTrack(row: CsvTrack) {
       spotifyId: row.track_id,
       trackName: row.track_name || 'Sem nome',
       artists: row.artists || 'Desconhecido',
-      albumName: row.album_name || 'Sem álbum',
+      albumName: row.album_name || 'Sem album',
       popularity: toNumber(row.popularity),
       durationMs: toNumber(row.duration_ms),
       explicit: parseBoolean(row.explicit),
-
       vibe: parseVibe(row.vibe),
-
       danceability: toNumber(row.danceability),
       energy: toNumber(row.energy),
       key: toNumber(row.key),
@@ -168,20 +113,6 @@ async function processTrack(row: CsvTrack) {
       valence: toNumber(row.valence),
       tempo: toNumber(row.tempo),
       timeSignature: toNumber(row.time_signature),
-    },
-  });
-
-  await prisma.trackGenre.upsert({
-    where: {
-      trackId_genreId: {
-        trackId: track.id,
-        genreId,
-      },
-    },
-    update: {},
-    create: {
-      trackId: track.id,
-      genreId,
     },
   });
 }
@@ -195,7 +126,7 @@ async function processBatch(batch: CsvTrack[]) {
 async function main() {
   const csvPath = path.join(process.cwd(), 'data', 'dataset_final.csv');
 
-  console.log(`📂 Lendo CSV: ${csvPath}`);
+  console.log(`Lendo CSV: ${csvPath}`);
 
   const file = fs.readFileSync(csvPath, 'utf8');
 
@@ -208,44 +139,37 @@ async function main() {
     ? allRecords.slice(0, TEST_LIMIT)
     : allRecords;
 
-  console.log(`🎧 Total de músicas no CSV: ${allRecords.length}`);
+  console.log(`Total de musicas no CSV: ${allRecords.length}`);
 
   if (TEST_MODE) {
-    console.log(`🧪 MODO TESTE ATIVO: importando apenas ${records.length} músicas`);
+    console.log(`MODO TESTE ATIVO: importando apenas ${records.length} musicas`);
   } else {
-    console.log(`🚀 MODO COMPLETO: importando ${records.length} músicas`);
+    console.log(`MODO COMPLETO: importando ${records.length} musicas`);
   }
-
-  await loadGenres();
 
   for (let i = 0; i < records.length; i += BATCH_SIZE) {
     const batch = records.slice(i, i + BATCH_SIZE);
     const batchNumber = Math.floor(i / BATCH_SIZE) + 1;
 
-    console.log(
-      `⚡ Processando lote ${batchNumber} (${batch.length} músicas)`
-    );
+    console.log(`Processando lote ${batchNumber} (${batch.length} musicas)`);
 
     await processBatch(batch);
 
-    console.log(
-      `✅ ${Math.min(i + BATCH_SIZE, records.length)} / ${records.length} músicas processadas`
-      
-    );
+    console.log(`${Math.min(i + BATCH_SIZE, records.length)} / ${records.length} musicas processadas`);
   }
 
-  console.log('✅ Seed finalizado com sucesso');
+  console.log('Seed finalizado com sucesso');
 
   if (TEST_MODE) {
     console.log('');
-    console.log('⚠️ O seed rodou em MODO TESTE.');
+    console.log('O seed rodou em MODO TESTE.');
     console.log('Para importar tudo, altere TEST_MODE para false.');
   }
 }
 
 main()
   .catch((error) => {
-    console.error('❌ Erro ao importar músicas:', error);
+    console.error('Erro ao importar musicas:', error);
     process.exit(1);
   })
   .finally(async () => {

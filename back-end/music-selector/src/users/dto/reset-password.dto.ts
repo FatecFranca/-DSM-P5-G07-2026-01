@@ -38,3 +38,23 @@ export class ResetPasswordDto {
   @MatchProperty('password', { message: 'Senhas não correspondem' })
   passwordConfirmation!: string;
 }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

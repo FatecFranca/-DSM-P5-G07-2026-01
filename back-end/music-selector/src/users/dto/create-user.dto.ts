@@ -1,111 +1,77 @@
 import {
+  IsDateString,
   IsEmail,
   IsNotEmpty,
   IsString,
   Length,
   Matches,
-  IsOptional,
-  IsDateString,
 } from 'class-validator';
 import { ApiProperty } from '@nestjs/swagger';
 import { IsMinAge } from '../../common/validators/is-min-age.validator';
 import { MatchProperty } from '../../common/validators/match-property.validator';
 
-/**
- * RN01-RN06: DTO de Registro de Usuário
- * Validações obrigatórias:
- * - RN02: Email único
- * - RN03: Senha 8+ chars (letra + número)
- * - RN05: Idade mínima 13 anos
- * - RNF-S01: Sanitização (50 chars max, sem números)
- */
 export class CreateUserDto {
   @ApiProperty({
-    example: 'João Silva',
-    description: 'RNF-S01: Nome (50 chars max, sem números ou especiais)',
+    example: 'Joao Silva',
+    description: 'Nome do usuario',
     minLength: 1,
     maxLength: 50,
   })
-  @IsNotEmpty({ message: '❌ Nome é obrigatório' })
-  @IsString({ message: '❌ Nome deve ser texto' })
-  @Length(1, 50, { message: '❌ Nome deve ter 1-50 caracteres' })
+  @IsNotEmpty({ message: 'Nome e obrigatorio' })
+  @IsString({ message: 'Nome deve ser texto' })
+  @Length(1, 50, { message: 'Nome deve ter 1-50 caracteres' })
   @Matches(/^[a-zA-ZÀ-ÿ\s]+$/, {
-    message: '❌ Nome: apenas letras e espaços permitidos',
+    message: 'Nome: apenas letras e espacos permitidos',
   })
   name!: string;
 
   @ApiProperty({
     example: 'joao@example.com',
-    description: 'RN02: Email único (100 chars max). RNF-S01: Regex validation',
+    description: 'Email unico',
     format: 'email',
     maxLength: 100,
   })
-  @IsNotEmpty({ message: '❌ Email é obrigatório' })
-  @IsEmail({}, { message: '❌ Email inválido (deve ser válido)' })
-  @Length(1, 100, { message: '❌ Email máximo 100 caracteres' })
+  @IsNotEmpty({ message: 'Email e obrigatorio' })
+  @IsEmail({}, { message: 'Email invalido' })
+  @Length(1, 100, { message: 'Email maximo 100 caracteres' })
   email!: string;
 
   @ApiProperty({
     example: 'joao@example.com',
-    description: 'RN01: Confirmação de email (deve ser idêntico)',
+    description: 'Confirmacao de email',
     format: 'email',
   })
-  @IsNotEmpty({ message: '❌ Confirmação de email é obrigatória' })
-  @MatchProperty('email', { message: '❌ Emails não correspondem' })
+  @IsNotEmpty({ message: 'Confirmacao de email e obrigatoria' })
+  @MatchProperty('email', { message: 'Emails nao correspondem' })
   emailConfirmation!: string;
 
   @ApiProperty({
     example: 'SenhaForte123',
-    description: 'Senha segura (8+ chars, mínimo 1 letra e 1 número)',
+    description: 'Senha segura com minimo 8 caracteres, uma letra e um numero',
     minLength: 8,
-    pattern: '^(?=.*[a-zA-Z])(?=.*\\d)',
   })
-  @IsNotEmpty({ message: 'Senha é obrigatória' })
+  @IsNotEmpty({ message: 'Senha e obrigatoria' })
   @IsString({ message: 'Senha deve ser uma string' })
-  @Length(8, 128, { message: 'Senha deve ter no mínimo 8 caracteres' })
+  @Length(8, 128, { message: 'Senha deve ter no minimo 8 caracteres' })
   @Matches(/[a-zA-Z]/, { message: 'Senha deve conter pelo menos uma letra' })
-  @Matches(/\d/, { message: 'Senha deve conter pelo menos um número' })
+  @Matches(/\d/, { message: 'Senha deve conter pelo menos um numero' })
   password!: string;
 
   @ApiProperty({
     example: 'SenhaForte123',
-    description: 'Confirmação da senha (deve corresponder a password)',
+    description: 'Confirmacao da senha',
   })
-  @IsNotEmpty({ message: 'Confirmação de senha é obrigatória' })
-  @MatchProperty('password', { message: 'Senhas não correspondem' })
+  @IsNotEmpty({ message: 'Confirmacao de senha e obrigatoria' })
+  @MatchProperty('password', { message: 'Senhas nao correspondem' })
   passwordConfirmation!: string;
 
   @ApiProperty({
     example: '2005-06-15',
-    description: 'Data de nascimento (ISO format: YYYY-MM-DD). Mínimo 13 anos.',
+    description: 'Data de nascimento em formato YYYY-MM-DD',
     format: 'date',
   })
-  @IsNotEmpty({ message: 'Data de nascimento é obrigatória' })
-  @IsDateString({}, { message: 'Data de nascimento inválida (use formato ISO: YYYY-MM-DD)' })
-  @IsMinAge(13, { message: 'Você deve ter pelo menos 13 anos para se cadastrar' })
+  @IsNotEmpty({ message: 'Data de nascimento e obrigatoria' })
+  @IsDateString({}, { message: 'Data de nascimento invalida' })
+  @IsMinAge(13, { message: 'Voce deve ter pelo menos 13 anos para se cadastrar' })
   dateOfBirth!: string;
-
-  @ApiProperty({
-    example: 'pop,rock,jazz',
-    description: 'Gêneros favoritos (1-5, separados por vírgula, sem espaços) - OPCIONAL',
-    required: false,
-  })
-  @IsOptional()
-  @Matches(/^[a-zA-Z0-9_-]+(,[a-zA-Z0-9_-]+){0,4}$/, {
-    message: 'Máximo 5 gêneros separados por vírgula (sem espaços)',
-  })
-  favoriteGenres?: string;
-
-  @ApiProperty({
-    example: 'mixed',
-    description: 'Preferência de áudio (instrumental, mixed ou vocal) - OPCIONAL',
-    enum: ['instrumental', 'mixed', 'vocal'],
-    required: false,
-  })
-  @IsOptional()
-  @Matches(/^(instrumental|mixed|vocal)$/i, {
-    message: 'Preferência deve ser: instrumental, mixed ou vocal',
-  })
-  audioPreference?: 'instrumental' | 'mixed' | 'vocal';
 }
-

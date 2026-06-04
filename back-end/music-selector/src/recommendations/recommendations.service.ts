@@ -52,10 +52,7 @@ export class RecommendationsService {
     return this.playlistService.getPlaylistDetails(playlistId, userId);
   }
 
-  /**
-   * RN23-RN24: Registrar feedback
-   */
- 
+  
 
   
   /**
@@ -65,7 +62,5 @@ export class RecommendationsService {
     return this.playlistService.deletePlaylist(playlistId, userId);
   }
 
-  /**
-   * Limpar feedbacks ao deletar conta
-   */
+ 
 }

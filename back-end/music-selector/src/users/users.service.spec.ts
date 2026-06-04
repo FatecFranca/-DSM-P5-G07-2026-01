@@ -33,10 +33,6 @@ describe('UsersService', () => {
               delete: jest.fn(),
               findMany: jest.fn(),
             },
-            feedback: {
-              deleteMany: jest.fn(),
-              updateMany: jest.fn(),
-            },
           },
         },
       ],
@@ -126,24 +122,29 @@ describe('UsersService', () => {
   describe('deleteAccount', () => {
     it('should delete user by id', async () => {
       jest.spyOn(prismaService.user, 'findUnique').mockResolvedValue(mockUser as any);
-      jest.spyOn(prismaService.feedback, 'updateMany').mockResolvedValue({ count: 0 });
-      jest.spyOn(prismaService.user, 'delete').mockResolvedValue(mockUser as any);
+      jest.spyOn(prismaService.user, 'update').mockResolvedValue(mockUser as any);
 
       const result = await service.deleteAccount('user123');
 
       expect(result).toBeDefined();
       expect(prismaService.user.findUnique).toHaveBeenCalled();
-      expect(prismaService.user.delete).toHaveBeenCalled();
+      expect(prismaService.user.update).toHaveBeenCalled();
     });
 
-    it('should anonymize feedback before deleting user', async () => {
+    it('should anonymize user data instead of hard deleting', async () => {
       jest.spyOn(prismaService.user, 'findUnique').mockResolvedValue(mockUser as any);
-      jest.spyOn(prismaService.feedback, 'updateMany').mockResolvedValue({ count: 5 });
-      jest.spyOn(prismaService.user, 'delete').mockResolvedValue(mockUser as any);
+      jest.spyOn(prismaService.user, 'update').mockResolvedValue(mockUser as any);
 
       await service.deleteAccount('user123');
 
-      expect(prismaService.feedback.updateMany).toHaveBeenCalled();
+      expect(prismaService.user.update).toHaveBeenCalledWith(
+        expect.objectContaining({
+          where: { id: 'user123' },
+          data: expect.objectContaining({
+            name: 'Deleted User',
+          }),
+        }),
+      );
     });
   });
 });

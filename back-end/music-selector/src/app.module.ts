@@ -10,6 +10,10 @@ import { AuthModule } from './auth/auth.module';
 import { RecommendationsModule } from './recommendations/recommendations.module';
 import { JobsModule } from './jobs/jobs.module';
 
+
+
+
+
 @Module({
   imports: [
     // RN15: Ativar scheduler de tarefas
@@ -31,6 +35,7 @@ import { JobsModule } from './jobs/jobs.module';
     UsersModule,
     AuthModule,
     RecommendationsModule,
+    
   ],
   controllers: [AppController],
   providers: [
