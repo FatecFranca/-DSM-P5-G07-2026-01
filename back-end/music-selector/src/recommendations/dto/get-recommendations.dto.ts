@@ -1,107 +1,68 @@
-import { IsEnum, IsNotEmpty, IsOptional, Min, Max, IsBoolean } from 'class-validator';
+import { IsEnum, IsNotEmpty } from 'class-validator';
 import { ApiProperty } from '@nestjs/swagger';
 
-/**
- * RN18: Preferência de Áudio
- * Define o tipo de faixa predominante na playlist
- */
-export enum Objective {
-  FOCUS,
-  WORKOUT,
-  RELAX,
-  MOOD_BOOST
+export enum ObjectiveType {
+  FOCUS = 'FOCUS',
+  WORKOUT = 'WORKOUT',
+  RELAX = 'RELAX',
+  MOOD_BOOST = 'MOOD_BOOST',
 }
-
 
 export enum AudioPreference {
-  INSTRUMENTAL = 'INSTRUMENTAL', // Preferência por músicas sem vocais
-  VOCAL = 'VOCAL',               // Preferência por músicas com vocais
-  MIXED = 'MIXED',               // Sem preferência, pode incluir ambos
+  INSTRUMENTAL = 'INSTRUMENTAL',
+  VOCAL = 'VOCAL',
+  MIXED = 'MIXED',
 }
 
-/**
- * RN20: Estado Emocional do Usuário
- * Afeta a seleção de características musicais (valence, energy)
- */
 export enum MoodType {
-  HAPPY = 'HAPPY',        // Feliz/Animado
-  NEUTRAL = 'NEUTRAL',    // Neutro/Normal
-  ANXIOUS = 'ANXIOUS',    // Ansioso/Estressado
-  SAD = 'SAD',            // Triste/Melancólico
+  HAPPY = 'HAPPY',
+  NEUTRAL = 'NEUTRAL',
+  ANXIOUS = 'ANXIOUS',
+  SAD = 'SAD',
 }
 
-/**
- * RN19: Nível de Energia Desejado
- * Define o range de features de energia (0.0-1.0)
- * LOW: 0.0-0.33 | MEDIUM: 0.34-0.66 | HIGH: 0.67-1.0
- */
 export enum EnergyLevelType {
-  LOW = 'LOW',            // Energia baixa (0.0-0.33)
-  MEDIUM = 'MEDIUM',      // Energia média (0.34-0.66)
-  HIGH = 'HIGH',          // Energia alta (0.67-1.0)
+  LOW = 'LOW',
+  MEDIUM = 'MEDIUM',
+  HIGH = 'HIGH',
 }
 
-/**
- * RN17-RN22: Parâmetros para gerar recomendações personalizadas
- * Entrada obrigatória para POST /api/recommendations/generate
- */
 export class GetRecommendationsDto {
   @ApiProperty({
-    example: 'INSTRUMENTAL',
-    description: 'RN18: Preferência de Áudio - Tipo de faixa estruturada vinda do banco via FastAPI (INSTRUMENTAL, VOCAL, MIXED)',
-    enum: AudioPreference,
-    enumName: 'AudioPreference',
+    example: 'WORKOUT',
+    description:
+      'Objetivo que define a base da conversao para as 7 features do ML',
+    enum: ObjectiveType,
+    enumName: 'ObjectiveType',
   })
-  @IsEnum(AudioPreference, {
-    message: 'Audio Preference deve ser um de: INSTRUMENTAL, VOCAL, MIXED',
+  @IsEnum(ObjectiveType, {
+    message: 'Objective deve ser um de: FOCUS, WORKOUT, RELAX, MOOD_BOOST',
   })
-  @IsNotEmpty({ message: 'Preferência de áudio é obrigatória' })
-  audioPreference!: AudioPreference; // ◄ CORRIGIDO: Nome correto alinhado ao Enum e ao FastAPI
+  @IsNotEmpty({ message: 'Objective e obrigatorio' })
+  objective!: ObjectiveType;
 
   @ApiProperty({
     example: 'HAPPY',
-    description: 'RN20: Humor - Estado emocional do usuário (impacta valence e energy)',
+    description: 'Humor do usuario usado na conversao para features do ML',
     enum: MoodType,
     enumName: 'MoodType',
   })
   @IsEnum(MoodType, {
     message: 'Humor deve ser um de: HAPPY, NEUTRAL, ANXIOUS, SAD',
   })
-  @IsNotEmpty({ message: 'Humor é obrigatório' })
+  @IsNotEmpty({ message: 'Humor e obrigatorio' })
   mood!: MoodType;
 
   @ApiProperty({
     example: 'HIGH',
-    description: 'RN19: Energia - Nível de energia desejado (LOW: 0.0-0.33, MEDIUM: 0.34-0.66, HIGH: 0.67-1.0)',
+    description:
+      'Nivel de energia desejado usado na conversao para features do ML',
     enum: EnergyLevelType,
     enumName: 'EnergyLevelType',
   })
   @IsEnum(EnergyLevelType, {
     message: 'Energia deve ser um de: LOW, MEDIUM, HIGH',
   })
-  @IsNotEmpty({ message: 'Nível de energia é obrigatório' })
+  @IsNotEmpty({ message: 'Nivel de energia e obrigatorio' })
   energyLevel!: EnergyLevelType;
-
-  @ApiProperty({
-    example: 10,
-    description: 'RN22: Quantidade de faixas - FIXO em 10 para garantir consistência. Não alterar.',
-    minimum: 10,
-    maximum: 10,
-    default: 10,
-    required: false,
-  })
-  @IsOptional()
-  @Min(10, { message: 'Deve ser exatamente 10 faixas (RN22)' })
-  @Max(10, { message: 'Deve ser exatamente 10 faixas (RN22)' })
-  limit?: number = 10;
-
-  @ApiProperty({
-    example: true,
-    description: 'Incluir explicações detalhadas para cada faixa (DNA + motivo)',
-    required: false,
-    default: true,
-  })
-  @IsOptional()
-  @IsBoolean({ message: 'includeExplanation deve ser um valor booleano' })
-  includeExplanation?: boolean = true;
 }
