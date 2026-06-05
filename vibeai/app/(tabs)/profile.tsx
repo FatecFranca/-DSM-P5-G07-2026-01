@@ -10,7 +10,8 @@ import {
 import { router } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { LinearGradient } from 'expo-linear-gradient';
-import { colors, spacing, radius, fontSize } from '@/constants/theme';
+import Svg, { Path, Circle } from 'react-native-svg';
+import { colors } from '@/constants/theme';
 import { useAuthStore } from '@/store/authStore';
 import { useOnboardingStore } from '@/store/onboardingStore';
 
@@ -33,7 +34,6 @@ export default function ProfileScreen() {
     setDeleteModalOpen(false);
     logout();
     resetOnboarding();
-    // chamada de API para anonimizar dados (LGPD) entra aqui futuramente
     router.replace('/(auth)/welcome');
   };
 
@@ -45,10 +45,8 @@ export default function ProfileScreen() {
         showsVerticalScrollIndicator={false}
         contentContainerStyle={styles.scroll}
       >
-        {/* Título */}
         <Text style={styles.pageTitle}>Perfil</Text>
 
-        {/* Avatar e dados do usuário */}
         <View style={styles.avatarSection}>
           <LinearGradient
             colors={[colors.primary, colors.secondary]}
@@ -62,18 +60,16 @@ export default function ProfileScreen() {
           <Text style={styles.userEmail}>{user?.email || 'usuario@email.com'}</Text>
         </View>
 
-        {/* Ações */}
         <View style={styles.actions}>
-
           <Pressable
             style={({ pressed }) => [styles.actionRow, pressed && styles.pressed]}
             onPress={handleRedoOnboarding}
           >
             <View style={styles.actionIcon}>
-              <Text style={styles.actionIconText}>⚙️</Text>
+              <SettingsIcon />
             </View>
             <Text style={styles.actionLabel}>Refazer preferências</Text>
-            <Text style={styles.actionChevron}>›</Text>
+            <ChevronIcon />
           </Pressable>
 
           <Pressable
@@ -81,25 +77,23 @@ export default function ProfileScreen() {
             onPress={handleLogout}
           >
             <View style={styles.actionIcon}>
-              <Text style={styles.actionIconText}>🚪</Text>
+              <LogoutIcon />
             </View>
             <Text style={styles.actionLabel}>Sair da conta</Text>
-            <Text style={styles.actionChevron}>›</Text>
+            <ChevronIcon />
           </Pressable>
-
         </View>
 
-        {/* Excluir conta */}
-        <Pressable
-          style={({ pressed }) => [styles.deleteButton, pressed && styles.pressed]}
-          onPress={() => setDeleteModalOpen(true)}
-        >
-          <Text style={styles.deleteText}>Excluir minha conta</Text>
-        </Pressable>
-
+        <View style={styles.deleteArea}>
+          <Pressable
+            style={({ pressed }) => [styles.deleteButton, pressed && styles.pressed]}
+            onPress={() => setDeleteModalOpen(true)}
+          >
+            <Text style={styles.deleteText}>Excluir minha conta</Text>
+          </Pressable>
+        </View>
       </ScrollView>
 
-      {/* Modal de confirmação de exclusão */}
       <Modal
         visible={deleteModalOpen}
         transparent
@@ -108,10 +102,8 @@ export default function ProfileScreen() {
       >
         <View style={styles.modalOverlay}>
           <View style={styles.modalContent}>
-
-            {/* Ícone de aviso */}
             <View style={styles.modalIcon}>
-              <Text style={styles.modalIconText}>⚠️</Text>
+              <WarningIcon />
             </View>
 
             <Text style={styles.modalTitle}>Excluir conta?</Text>
@@ -134,12 +126,51 @@ export default function ProfileScreen() {
                 <Text style={styles.btnCancelText}>Cancelar</Text>
               </Pressable>
             </View>
-
           </View>
         </View>
       </Modal>
-
     </SafeAreaView>
+  );
+}
+
+function SettingsIcon() {
+  return (
+    <Svg width={22} height={22} viewBox="0 0 24 24" fill="none">
+      <Circle cx={12} cy={12} r={3} stroke={colors.secondary} strokeWidth={2} />
+      <Path
+        d="M19.4 15a1.7 1.7 0 00.34 1.88l.04.04a2 2 0 01-2.83 2.83l-.04-.04A1.7 1.7 0 0015 19.4a1.7 1.7 0 00-1 .6V20a2 2 0 01-4 0v-.05a1.7 1.7 0 00-1-.6 1.7 1.7 0 00-1.88.34l-.04.04a2 2 0 01-2.83-2.83l.04-.04A1.7 1.7 0 004.6 15a1.7 1.7 0 00-.6-1H4a2 2 0 010-4h.05a1.7 1.7 0 00.6-1 1.7 1.7 0 00-.34-1.88l-.04-.04a2 2 0 012.83-2.83l.04.04A1.7 1.7 0 009 4.6a1.7 1.7 0 001-.6V4a2 2 0 014 0v.05a1.7 1.7 0 001 .6 1.7 1.7 0 001.88-.34l.04-.04a2 2 0 012.83 2.83l-.04.04A1.7 1.7 0 0019.4 9c.2.37.4.7.6 1H20a2 2 0 010 4h-.05c-.2.3-.4.63-.55 1z"
+        stroke={colors.secondary}
+        strokeWidth={1.6}
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
+    </Svg>
+  );
+}
+
+function LogoutIcon() {
+  return (
+    <Svg width={22} height={22} viewBox="0 0 24 24" fill="none">
+      <Path d="M10 7V5a2 2 0 012-2h7v18h-7a2 2 0 01-2-2v-2" stroke={colors.textSecondary} strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" />
+      <Path d="M15 12H3M7 8l-4 4 4 4" stroke={colors.textSecondary} strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" />
+    </Svg>
+  );
+}
+
+function ChevronIcon() {
+  return (
+    <Svg width={20} height={20} viewBox="0 0 24 24" fill="none">
+      <Path d="M9 18l6-6-6-6" stroke={colors.textSecondary} strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" />
+    </Svg>
+  );
+}
+
+function WarningIcon() {
+  return (
+    <Svg width={26} height={26} viewBox="0 0 24 24" fill="none">
+      <Path d="M12 8v5M12 17h.01" stroke={colors.danger} strokeWidth={2.2} strokeLinecap="round" />
+      <Path d="M10.3 4.5a2 2 0 013.4 0l8 14A2 2 0 0120 21H4a2 2 0 01-1.7-3l8-13.5z" stroke={colors.danger} strokeWidth={2} strokeLinejoin="round" />
+    </Svg>
   );
 }
 
@@ -149,154 +180,166 @@ const styles = StyleSheet.create({
     backgroundColor: colors.background,
   },
   scroll: {
-    paddingHorizontal: spacing.lg,
-    paddingBottom: spacing.xxl,
+    flexGrow: 1,
+    paddingHorizontal: 24,
+    paddingTop: 24,
+    paddingBottom: 112,
   },
   pageTitle: {
-    fontSize: fontSize.xl,
-    fontWeight: '700',
+    fontFamily: 'Inter_800ExtraBold',
+    fontSize: 30,
+    lineHeight: 38,
     color: colors.textPrimary,
-    marginTop: spacing.md,
-    marginBottom: spacing.xl,
+    marginBottom: 36,
   },
   avatarSection: {
     alignItems: 'center',
-    marginBottom: spacing.xxl,
+    marginBottom: 54,
   },
   avatar: {
-    width: 96,
-    height: 96,
-    borderRadius: radius.full,
+    width: 104,
+    height: 104,
+    borderRadius: 52,
     alignItems: 'center',
     justifyContent: 'center',
-    marginBottom: spacing.md,
+    marginBottom: 18,
   },
   avatarText: {
-    fontSize: fontSize.xxl,
-    fontWeight: '700',
+    fontFamily: 'Inter_800ExtraBold',
+    fontSize: 38,
     color: colors.textPrimary,
   },
   userName: {
-    fontSize: fontSize.lg,
-    fontWeight: '700',
+    fontFamily: 'Inter_800ExtraBold',
+    fontSize: 21,
+    lineHeight: 27,
     color: colors.textPrimary,
-    marginBottom: spacing.xs,
+    marginBottom: 4,
   },
   userEmail: {
-    fontSize: fontSize.sm,
+    fontFamily: 'Inter_400Regular',
+    fontSize: 15,
+    lineHeight: 21,
     color: colors.textSecondary,
   },
   actions: {
-    gap: spacing.md,
-    marginBottom: spacing.xxl,
+    gap: 16,
   },
   actionRow: {
+    minHeight: 64,
     flexDirection: 'row',
     alignItems: 'center',
-    gap: spacing.md,
-    padding: spacing.md,
+    gap: 16,
+    paddingHorizontal: 16,
     backgroundColor: colors.surface,
-    borderRadius: radius.lg,
+    borderRadius: 20,
   },
   actionIcon: {
-    width: 40,
-    height: 40,
-    borderRadius: radius.md,
+    width: 42,
+    height: 42,
+    borderRadius: 14,
     backgroundColor: 'rgba(255,255,255,0.05)',
     alignItems: 'center',
     justifyContent: 'center',
   },
-  actionIconText: {
-    fontSize: 18,
-  },
   actionLabel: {
     flex: 1,
-    fontSize: fontSize.md,
-    fontWeight: '500',
+    fontFamily: 'Inter_700Bold',
+    fontSize: 17,
+    lineHeight: 23,
     color: colors.textPrimary,
   },
-  actionChevron: {
-    fontSize: 20,
-    color: colors.textSecondary,
+  deleteArea: {
+    flex: 1,
+    justifyContent: 'flex-end',
+    alignItems: 'center',
+    paddingTop: 70,
   },
   deleteButton: {
-    alignItems: 'center',
-    padding: spacing.md,
+    paddingHorizontal: 16,
+    paddingVertical: 14,
   },
   deleteText: {
-    fontSize: fontSize.sm,
-    fontWeight: '600',
+    fontFamily: 'Inter_700Bold',
+    fontSize: 15,
+    lineHeight: 21,
     color: colors.danger,
   },
-
-  // Modal
   modalOverlay: {
     flex: 1,
     backgroundColor: 'rgba(0,0,0,0.80)',
     alignItems: 'center',
     justifyContent: 'center',
-    padding: spacing.lg,
+    padding: 24,
   },
   modalContent: {
     width: '100%',
     backgroundColor: colors.surface,
-    borderRadius: radius.lg,
-    padding: spacing.lg,
+    borderRadius: 24,
+    padding: 28,
     borderWidth: 1,
     borderColor: 'rgba(255,255,255,0.10)',
   },
   modalIcon: {
-    width: 48,
-    height: 48,
-    borderRadius: radius.full,
-    backgroundColor: 'rgba(239,68,68,0.20)',
+    width: 52,
+    height: 52,
+    borderRadius: 26,
+    backgroundColor: 'rgba(239,68,68,0.16)',
     alignItems: 'center',
     justifyContent: 'center',
-    marginBottom: spacing.md,
-  },
-  modalIconText: {
-    fontSize: 22,
+    marginBottom: 16,
   },
   modalTitle: {
-    fontSize: fontSize.lg,
-    fontWeight: '700',
+    fontFamily: 'Inter_800ExtraBold',
+    fontSize: 24,
+    lineHeight: 31,
     color: colors.textPrimary,
-    marginBottom: spacing.sm,
+    marginBottom: 12,
   },
   modalDescription: {
-    fontSize: fontSize.sm,
+    fontFamily: 'Inter_400Regular',
+    fontSize: 16,
     color: colors.textSecondary,
-    lineHeight: 22,
-    marginBottom: spacing.lg,
+    lineHeight: 24,
+    marginBottom: 28,
   },
   modalActions: {
-    gap: spacing.sm,
+    gap: 14,
   },
   btnDelete: {
     width: '100%',
-    padding: spacing.md,
-    borderRadius: radius.md,
+    height: 58,
+    borderRadius: 999,
     backgroundColor: colors.danger,
     alignItems: 'center',
+    justifyContent: 'center',
+    shadowColor: colors.danger,
+    shadowOffset: { width: 0, height: 8 },
+    shadowOpacity: 0.26,
+    shadowRadius: 18,
+    elevation: 8,
   },
   btnDeleteText: {
-    fontSize: fontSize.md,
-    fontWeight: '700',
+    fontFamily: 'Inter_800ExtraBold',
+    fontSize: 16,
+    lineHeight: 22,
     color: colors.textPrimary,
   },
   btnCancel: {
     width: '100%',
-    padding: spacing.md,
-    borderRadius: radius.md,
-    backgroundColor: 'rgba(255,255,255,0.05)',
+    height: 54,
+    borderRadius: 999,
+    backgroundColor: 'transparent',
     alignItems: 'center',
+    justifyContent: 'center',
   },
   btnCancelText: {
-    fontSize: fontSize.md,
-    fontWeight: '500',
+    fontFamily: 'Inter_700Bold',
+    fontSize: 16,
+    lineHeight: 22,
     color: colors.textSecondary,
   },
   pressed: {
-    opacity: 0.7,
+    opacity: 0.72,
   },
 });

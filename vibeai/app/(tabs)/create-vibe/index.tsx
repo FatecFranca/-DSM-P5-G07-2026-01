@@ -1,36 +1,39 @@
-import { useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import {
+  Animated,
   View,
   Text,
   StyleSheet,
   Pressable,
   ScrollView,
-  ActivityIndicator,
 } from 'react-native';
 import { router } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { LinearGradient } from 'expo-linear-gradient';
-import { colors, spacing, radius, fontSize } from '@/constants/theme';
+import Svg, { Path, Circle } from 'react-native-svg';
+import { colors } from '@/constants/theme';
 import { useVibeStore } from '@/store/vibeStore';
 
-const OBJECTIVES = [
-  { id: 'focus', label: 'Estudar/Foco', desc: 'Prioriza instrumental', emoji: '🧠' },
-  { id: 'workout', label: 'Treinar/Exercício', desc: 'Prioriza beats intensos', emoji: '⚡' },
-  { id: 'relax', label: 'Relaxar/Dormir', desc: 'Prioriza acústico', emoji: '🌙' },
-  { id: 'mood', label: 'Melhorar o humor', desc: 'Prioriza energia', emoji: '😊' },
+type ObjectiveIconName = 'focus' | 'energy' | 'calm' | 'mood';
+
+const OBJECTIVES: Array<{ id: string; label: string; icon: ObjectiveIconName }> = [
+  { id: 'focus', label: 'Me ajudar a focar', icon: 'focus' },
+  { id: 'workout', label: 'Me dar energia', icon: 'energy' },
+  { id: 'relax', label: 'Me acalmar', icon: 'calm' },
+  { id: 'mood', label: 'Melhorar meu humor', icon: 'mood' },
 ];
 
 const MOODS = [
-  { id: 'happy', label: 'Feliz/Animado', emoji: '😄' },
-  { id: 'neutral', label: 'Neutro', emoji: '😐' },
-  { id: 'anxious', label: 'Ansioso/Tenso', emoji: '😰' },
-  { id: 'sad', label: 'Melancólico/Triste', emoji: '😔' },
+  { id: 'happy', label: 'Feliz/Animado' },
+  { id: 'neutral', label: 'Neutro' },
+  { id: 'anxious', label: 'Ansioso/Tenso' },
+  { id: 'sad', label: 'Melancólico/Triste' },
 ];
 
 const ENERGY_LEVELS = [
-  { id: 'low', label: 'Baixo', range: '0.0 – 0.33', color: colors.secondary },
-  { id: 'medium', label: 'Médio', range: '0.34 – 0.66', color: colors.primary },
-  { id: 'high', label: 'Alto', range: '0.67 – 1.0', color: colors.accent },
+  { id: 'low', label: 'Baixa', color: colors.secondary },
+  { id: 'medium', label: 'Média', color: colors.primary },
+  { id: 'high', label: 'Alta', color: colors.accent },
 ];
 
 export default function CreateVibeScreen() {
@@ -40,18 +43,37 @@ export default function CreateVibeScreen() {
   const [energy, setEnergy] = useState('');
   const [mood, setMood] = useState('');
   const [generating, setGenerating] = useState(false);
+  const spinValue = useRef(new Animated.Value(0)).current;
+
+  useEffect(() => {
+    if (!generating) {
+      spinValue.stopAnimation();
+      spinValue.setValue(0);
+      return;
+    }
+
+    const animation = Animated.loop(
+      Animated.timing(spinValue, {
+        toValue: 1,
+        duration: 1100,
+        useNativeDriver: true,
+      })
+    );
+
+    animation.start();
+    return () => animation.stop();
+  }, [generating, spinValue]);
 
   const isStepValid = () => {
     if (step === 1) return !!objective;
-    if (step === 2) return !!energy;
-    if (step === 3) return !!mood;
+    if (step === 2) return !!mood;
+    if (step === 3) return !!energy;
     return false;
   };
 
   const handleGenerate = () => {
     setGenerating(true);
     setVibeRequest({ objective, energyLevel: energy, mood });
-    // chamada de API entra aqui futuramente
     setTimeout(() => {
       setGenerating(false);
       router.push('/vibe/generated');
@@ -64,17 +86,20 @@ export default function CreateVibeScreen() {
   };
 
   if (generating) {
+    const spin = spinValue.interpolate({
+      inputRange: [0, 1],
+      outputRange: ['0deg', '360deg'],
+    });
+
     return (
       <View style={styles.loadingContainer}>
-        <View style={styles.loadingSpinner}>
-          <ActivityIndicator size="large" color={colors.primary} />
-          <Text style={styles.loadingEmoji}>🧠</Text>
+        <View style={styles.loadingRing}>
+          <Animated.View style={[styles.loadingArc, { transform: [{ rotate: spin }] }]} />
+          <View style={styles.loadingIcon}>
+            <AiIcon />
+          </View>
         </View>
-        <Text style={styles.loadingTitle}>A IA está criando sua Vibe</Text>
-        <Text style={styles.loadingSubtitle}>
-          Analisando {OBJECTIVES.find(o => o.id === objective)?.label} e{' '}
-          {MOODS.find(m => m.id === mood)?.label}...
-        </Text>
+        <Text style={styles.loadingTitle}>A IA está criando sua vibe...</Text>
       </View>
     );
   }
@@ -82,12 +107,10 @@ export default function CreateVibeScreen() {
   return (
     <SafeAreaView style={styles.safe}>
       <View style={styles.container}>
-
-        {/* Barra de progresso */}
         <View style={styles.progressBar}>
-          {[1, 2, 3].map((s) => (
-            <View key={s} style={styles.progressSegmentWrapper}>
-              {s <= step ? (
+          {[1, 2, 3].map((segment) => (
+            <View key={segment} style={styles.progressSegmentWrapper}>
+              {segment <= step ? (
                 <LinearGradient
                   colors={[colors.primary, colors.secondary]}
                   start={{ x: 0, y: 0 }}
@@ -105,11 +128,10 @@ export default function CreateVibeScreen() {
           showsVerticalScrollIndicator={false}
           contentContainerStyle={styles.scroll}
         >
-          {/* Step 1 — Objetivo */}
           {step === 1 && (
             <View>
-              <Text style={styles.title}>Qual seu objetivo?</Text>
-              <Text style={styles.subtitle}>O que você vai fazer agora?</Text>
+              <Text style={styles.title}>O que você quer que a música faça por você agora?</Text>
+              <Text style={styles.subtitle}>Objetivo da Música</Text>
 
               <View style={styles.optionList}>
                 {OBJECTIVES.map((obj) => {
@@ -125,14 +147,11 @@ export default function CreateVibeScreen() {
                       ]}
                     >
                       <View style={[styles.objectiveIcon, isSelected && styles.objectiveIconSelected]}>
-                        <Text style={styles.objectiveEmoji}>{obj.emoji}</Text>
+                        <ObjectiveIcon name={obj.icon} selected={isSelected} />
                       </View>
-                      <View style={styles.objectiveInfo}>
-                        <Text style={[styles.objectiveLabel, isSelected && styles.textSelected]}>
-                          {obj.label}
-                        </Text>
-                        <Text style={styles.objectiveDesc}>{obj.desc}</Text>
-                      </View>
+                      <Text style={[styles.objectiveLabel, isSelected && styles.textSelected]}>
+                        {obj.label}
+                      </Text>
                     </Pressable>
                   );
                 })}
@@ -140,11 +159,39 @@ export default function CreateVibeScreen() {
             </View>
           )}
 
-          {/* Step 2 — Energia */}
           {step === 2 && (
             <View>
-              <Text style={styles.title}>Nível de Energia</Text>
-              <Text style={styles.subtitle}>Quanta intensidade você quer?</Text>
+              <Text style={styles.title}>Como você está se sentindo agora?</Text>
+              <Text style={styles.subtitle}>Seu humor atual molda a recomendação.</Text>
+
+              <View style={styles.moodGrid}>
+                {MOODS.map((item) => {
+                  const isSelected = mood === item.id;
+                  return (
+                    <Pressable
+                      key={item.id}
+                      onPress={() => setMood(item.id)}
+                      style={({ pressed }) => [
+                        styles.moodCard,
+                        isSelected && styles.moodCardSelected,
+                        pressed && styles.pressed,
+                      ]}
+                    >
+                      <MoodIcon mood={item.id} selected={isSelected} />
+                      <Text style={[styles.moodLabel, isSelected && styles.textSelected]}>
+                        {item.label}
+                      </Text>
+                    </Pressable>
+                  );
+                })}
+              </View>
+            </View>
+          )}
+
+          {step === 3 && (
+            <View>
+              <Text style={styles.title}>Qual energia você quer para a playlist?</Text>
+              <Text style={styles.subtitle}>Intensidade da Música</Text>
 
               <View style={styles.energyCard}>
                 {ENERGY_LEVELS.map((level) => {
@@ -159,42 +206,14 @@ export default function CreateVibeScreen() {
                         pressed && styles.pressed,
                       ]}
                     >
-                      <View style={[styles.energyDot, { backgroundColor: level.color }, !isSelected && styles.energyDotInactive]} />
-                      <View>
-                        <Text style={[styles.energyLabel, isSelected && { color: level.color }]}>
-                          {level.label}
-                        </Text>
-                        <Text style={styles.energyRange}>{level.range}</Text>
+                      <View style={[
+                        styles.energyIcon,
+                        isSelected && { backgroundColor: level.color },
+                      ]}>
+                        <EnergyIcon level={level.id} selected={isSelected} />
                       </View>
-                    </Pressable>
-                  );
-                })}
-              </View>
-            </View>
-          )}
-
-          {/* Step 3 — Humor */}
-          {step === 3 && (
-            <View>
-              <Text style={styles.title}>Como você se sente?</Text>
-              <Text style={styles.subtitle}>Seu humor atual molda a recomendação.</Text>
-
-              <View style={styles.moodGrid}>
-                {MOODS.map((m) => {
-                  const isSelected = mood === m.id;
-                  return (
-                    <Pressable
-                      key={m.id}
-                      onPress={() => setMood(m.id)}
-                      style={({ pressed }) => [
-                        styles.moodCard,
-                        isSelected && styles.moodCardSelected,
-                        pressed && styles.pressed,
-                      ]}
-                    >
-                      <Text style={styles.moodEmoji}>{m.emoji}</Text>
-                      <Text style={[styles.moodLabel, isSelected && styles.textSelected]}>
-                        {m.label}
+                      <Text style={[styles.energyLabel, isSelected && { color: colors.textPrimary }]}>
+                        {level.label}
                       </Text>
                     </Pressable>
                   );
@@ -202,9 +221,9 @@ export default function CreateVibeScreen() {
               </View>
             </View>
           )}
+
         </ScrollView>
 
-        {/* Botões de navegação */}
         <View style={styles.footer}>
           {step > 1 && (
             <Pressable
@@ -226,7 +245,7 @@ export default function CreateVibeScreen() {
             disabled={!isStepValid()}
           >
             <LinearGradient
-              colors={isStepValid() ? [colors.primary, colors.secondary] : ['#333', '#333']}
+              colors={isStepValid() ? [colors.primary, colors.secondary] : ['#333842', '#333842']}
               start={{ x: 0, y: 0 }}
               end={{ x: 1, y: 0 }}
               style={styles.btnGradient}
@@ -237,9 +256,134 @@ export default function CreateVibeScreen() {
             </LinearGradient>
           </Pressable>
         </View>
-
       </View>
     </SafeAreaView>
+  );
+}
+
+function ObjectiveIcon({ name, selected }: { name: ObjectiveIconName; selected: boolean }) {
+  const stroke = selected ? colors.textPrimary : colors.textSecondary;
+
+  if (name === 'focus') {
+    return (
+      <Svg width={24} height={24} viewBox="0 0 24 24" fill="none">
+        <Circle cx={12} cy={12} r={3} stroke={stroke} strokeWidth={2} />
+        <Path d="M12 3v4M12 17v4M3 12h4M17 12h4" stroke={stroke} strokeWidth={2} strokeLinecap="round" />
+        <Path d="M5.6 5.6l2.8 2.8M15.6 15.6l2.8 2.8M18.4 5.6l-2.8 2.8M8.4 15.6l-2.8 2.8" stroke={stroke} strokeWidth={2} strokeLinecap="round" />
+      </Svg>
+    );
+  }
+
+  if (name === 'energy') {
+    return (
+      <Svg width={24} height={24} viewBox="0 0 24 24" fill="none">
+        <Path d="M13 2L4 14h7l-1 8 9-12h-7l1-8z" stroke={stroke} strokeWidth={2} strokeLinejoin="round" />
+      </Svg>
+    );
+  }
+
+  if (name === 'calm') {
+    return (
+      <Svg width={24} height={24} viewBox="0 0 24 24" fill="none">
+        <Path d="M19 14.5A7.5 7.5 0 119.5 5 6.5 6.5 0 0019 14.5z" stroke={stroke} strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" />
+      </Svg>
+    );
+  }
+
+  return (
+    <Svg width={24} height={24} viewBox="0 0 24 24" fill="none">
+      <Circle cx={12} cy={12} r={9} stroke={stroke} strokeWidth={2} />
+      <Path d="M8 14s1.2 2 4 2 4-2 4-2M9 10h.01M15 10h.01" stroke={stroke} strokeWidth={2} strokeLinecap="round" />
+    </Svg>
+  );
+}
+
+function EnergyIcon({ level, selected }: { level: string; selected: boolean }) {
+  const stroke = selected ? colors.textPrimary : colors.textSecondary;
+
+  if (level === 'low') {
+    return (
+      <Svg width={22} height={22} viewBox="0 0 24 24" fill="none">
+        <Path d="M5 14c2.5-3 4.5-3 7 0s4.5 3 7 0" stroke={stroke} strokeWidth={2} strokeLinecap="round" />
+      </Svg>
+    );
+  }
+
+  if (level === 'medium') {
+    return (
+      <Svg width={22} height={22} viewBox="0 0 24 24" fill="none">
+        <Path d="M4 16h3l2-6 4 10 3-8h4" stroke={stroke} strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" />
+      </Svg>
+    );
+  }
+
+  return (
+    <Svg width={22} height={22} viewBox="0 0 24 24" fill="none">
+      <Path d="M13 2L4 14h7l-1 8 9-12h-7l1-8z" stroke={stroke} strokeWidth={2} strokeLinejoin="round" />
+    </Svg>
+  );
+}
+
+function MoodIcon({ mood, selected }: { mood: string; selected: boolean }) {
+  const stroke = selected ? colors.textPrimary : colors.textSecondary;
+
+  if (mood === 'happy') {
+    return (
+      <Svg width={34} height={34} viewBox="0 0 24 24" fill="none">
+        <Circle cx={12} cy={12} r={9} stroke={stroke} strokeWidth={1.8} />
+        <Path d="M8.5 10h.01M15.5 10h.01M8 14c1 1.5 2.3 2.2 4 2.2s3-.7 4-2.2" stroke={stroke} strokeWidth={1.8} strokeLinecap="round" />
+      </Svg>
+    );
+  }
+
+  if (mood === 'neutral') {
+    return (
+      <Svg width={34} height={34} viewBox="0 0 24 24" fill="none">
+        <Circle cx={12} cy={12} r={9} stroke={stroke} strokeWidth={1.8} />
+        <Path d="M8.5 10h.01M15.5 10h.01M8.5 15h7" stroke={stroke} strokeWidth={1.8} strokeLinecap="round" />
+      </Svg>
+    );
+  }
+
+  if (mood === 'anxious') {
+    return (
+      <Svg width={34} height={34} viewBox="0 0 24 24" fill="none">
+        <Circle cx={12} cy={12} r={9} stroke={stroke} strokeWidth={1.8} />
+        <Path d="M8.5 11h.01M15.5 11h.01" stroke={stroke} strokeWidth={1.8} strokeLinecap="round" />
+        <Path d="M8 8.3c1-.8 2-.8 3 0M13 8.3c1-.8 2-.8 3 0" stroke={stroke} strokeWidth={1.8} strokeLinecap="round" />
+        <Path d="M9 16c.8-.7 1.8-1.1 3-1.1s2.2.4 3 1.1" stroke={stroke} strokeWidth={1.8} strokeLinecap="round" />
+      </Svg>
+    );
+  }
+
+  return (
+    <Svg width={34} height={34} viewBox="0 0 24 24" fill="none">
+      <Circle cx={12} cy={12} r={9} stroke={stroke} strokeWidth={1.8} />
+      <Path d="M8.5 10.5h.01M15.5 10.5h.01" stroke={stroke} strokeWidth={1.8} strokeLinecap="round" />
+      <Path d="M8.5 16.5c.9-1.1 2-1.7 3.5-1.7s2.6.6 3.5 1.7" stroke={stroke} strokeWidth={1.8} strokeLinecap="round" />
+      <Path d="M17 12.5c.9 1.1 1.3 1.9 1.3 2.6a1.3 1.3 0 01-2.6 0c0-.7.4-1.5 1.3-2.6z" stroke={stroke} strokeWidth={1.5} strokeLinejoin="round" />
+    </Svg>
+  );
+}
+
+function AiIcon() {
+  return (
+    <Svg width={34} height={34} viewBox="0 0 24 24" fill="none">
+      <Path
+        d="M12 3l1.25 4.25L17.5 8.5l-4.25 1.25L12 14l-1.25-4.25L6.5 8.5l4.25-1.25L12 3z"
+        stroke={colors.secondary}
+        strokeWidth={1.7}
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
+      <Path
+        d="M18 13l.75 2.25L21 16l-2.25.75L18 19l-.75-2.25L15 16l2.25-.75L18 13zM6 14l.55 1.45L8 16l-1.45.55L6 18l-.55-1.45L4 16l1.45-.55L6 14z"
+        stroke={colors.secondary}
+        strokeWidth={1.7}
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
+    </Svg>
   );
 }
 
@@ -250,65 +394,68 @@ const styles = StyleSheet.create({
   },
   container: {
     flex: 1,
-    paddingHorizontal: spacing.lg,
-    paddingTop: spacing.lg,
+    paddingHorizontal: 24,
+    paddingTop: 24,
   },
   progressBar: {
     flexDirection: 'row',
-    gap: spacing.sm,
-    marginBottom: spacing.xl,
+    gap: 8,
+    marginBottom: 36,
   },
   progressSegmentWrapper: {
     flex: 1,
     height: 6,
-    borderRadius: radius.full,
+    borderRadius: 999,
     overflow: 'hidden',
   },
   progressSegment: {
     flex: 1,
     height: 6,
-    borderRadius: radius.full,
+    borderRadius: 999,
   },
   progressInactive: {
     backgroundColor: colors.surface,
   },
   scroll: {
-    paddingBottom: spacing.xl,
+    paddingBottom: 32,
   },
   title: {
-    fontSize: fontSize.xxl,
-    fontWeight: '700',
+    fontFamily: 'Inter_800ExtraBold',
+    fontSize: 29,
+    lineHeight: 35,
     color: colors.textPrimary,
-    marginBottom: spacing.xs,
+    marginBottom: 8,
   },
   subtitle: {
-    fontSize: fontSize.md,
+    fontFamily: 'Inter_400Regular',
+    fontSize: 17,
+    lineHeight: 25,
     color: colors.textSecondary,
-    marginBottom: spacing.xl,
+    marginBottom: 32,
   },
-
-  // Step 1
   optionList: {
-    gap: spacing.md,
+    gap: 16,
   },
   objectiveCard: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: spacing.md,
-    padding: spacing.md,
-    borderRadius: radius.lg,
+    gap: 16,
+    minHeight: 82,
+    paddingHorizontal: 16,
+    paddingVertical: 16,
+    borderRadius: 16,
     borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.05)',
+    borderColor: 'rgba(255,255,255,0.06)',
     backgroundColor: colors.surface,
   },
   objectiveCardSelected: {
     borderColor: colors.primary,
-    backgroundColor: 'rgba(124,58,237,0.10)',
+    backgroundColor: 'rgba(124,58,237,0.16)',
   },
   objectiveIcon: {
     width: 48,
     height: 48,
-    borderRadius: radius.md,
+    borderRadius: 14,
     backgroundColor: 'rgba(255,255,255,0.05)',
     alignItems: 'center',
     justifyContent: 'center',
@@ -316,105 +463,89 @@ const styles = StyleSheet.create({
   objectiveIconSelected: {
     backgroundColor: colors.primary,
   },
-  objectiveEmoji: {
-    fontSize: 22,
-  },
-  objectiveInfo: {
-    flex: 1,
-  },
   objectiveLabel: {
-    fontSize: fontSize.md,
-    fontWeight: '600',
+    flex: 1,
+    fontFamily: 'Inter_700Bold',
+    fontSize: 18,
+    lineHeight: 24,
     color: colors.textPrimary,
-    marginBottom: spacing.xs,
-  },
-  objectiveDesc: {
-    fontSize: fontSize.sm,
-    color: colors.textSecondary,
   },
   textSelected: {
     color: colors.textPrimary,
   },
-
-  // Step 2
   energyCard: {
+    flexDirection: 'row',
     backgroundColor: colors.surface,
-    borderRadius: radius.lg,
+    borderRadius: 24,
     borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.05)',
-    padding: spacing.md,
-    gap: spacing.sm,
+    borderColor: 'rgba(255,255,255,0.06)',
+    padding: 12,
+    gap: 10,
   },
   energyOption: {
-    flexDirection: 'row',
+    flex: 1,
     alignItems: 'center',
-    gap: spacing.md,
-    padding: spacing.md,
-    borderRadius: radius.md,
+    justifyContent: 'center',
+    gap: 10,
+    minHeight: 120,
+    paddingVertical: 16,
+    paddingHorizontal: 8,
+    borderRadius: 18,
     borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.05)',
+    borderColor: 'rgba(255,255,255,0.06)',
+    backgroundColor: 'rgba(255,255,255,0.02)',
   },
-  energyDot: {
-    width: 12,
-    height: 12,
-    borderRadius: radius.full,
-  },
-  energyDotInactive: {
-    opacity: 0.3,
+  energyIcon: {
+    width: 46,
+    height: 46,
+    borderRadius: 14,
+    backgroundColor: 'rgba(255,255,255,0.05)',
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   energyLabel: {
-    fontSize: fontSize.md,
-    fontWeight: '600',
+    fontFamily: 'Inter_700Bold',
+    fontSize: 16,
     color: colors.textSecondary,
+    textAlign: 'center',
   },
-  energyRange: {
-    fontSize: fontSize.xs,
-    color: colors.textSecondary,
-    marginTop: 2,
-  },
-
-  // Step 3
   moodGrid: {
     flexDirection: 'row',
     flexWrap: 'wrap',
-    gap: spacing.md,
+    gap: 16,
   },
   moodCard: {
-    width: '47%',
-    aspectRatio: 1,
-    borderRadius: radius.lg,
+    width: '47.5%',
+    height: 118,
+    borderRadius: 16,
     borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.05)',
+    borderColor: 'rgba(255,255,255,0.06)',
     backgroundColor: colors.surface,
     alignItems: 'center',
     justifyContent: 'center',
-    gap: spacing.sm,
+    gap: 14,
   },
   moodCardSelected: {
     borderColor: colors.secondary,
     backgroundColor: 'rgba(34,211,238,0.10)',
   },
-  moodEmoji: {
-    fontSize: 32,
-  },
   moodLabel: {
-    fontSize: fontSize.sm,
-    fontWeight: '600',
+    fontFamily: 'Inter_700Bold',
+    fontSize: 16,
+    lineHeight: 21,
     color: colors.textSecondary,
     textAlign: 'center',
-    paddingHorizontal: spacing.sm,
+    paddingHorizontal: 8,
   },
-
-  // Footer
   footer: {
     flexDirection: 'row',
-    gap: spacing.md,
-    paddingBottom: spacing.xl,
-    paddingTop: spacing.md,
+    gap: 16,
+    paddingBottom: 24,
+    paddingTop: 16,
   },
   btnPrimary: {
     flex: 1,
-    borderRadius: radius.md,
+    borderRadius: 999,
     overflow: 'hidden',
   },
   btnPrimaryFlex: {
@@ -424,59 +555,69 @@ const styles = StyleSheet.create({
     opacity: 0.5,
   },
   btnGradient: {
-    paddingVertical: spacing.md,
+    height: 56,
     alignItems: 'center',
+    justifyContent: 'center',
+    borderRadius: 999,
   },
   btnText: {
     color: colors.textPrimary,
-    fontSize: fontSize.md,
-    fontWeight: '700',
+    fontFamily: 'Inter_700Bold',
+    fontSize: 17,
   },
   btnSecondary: {
-    paddingHorizontal: spacing.lg,
-    paddingVertical: spacing.md,
-    borderRadius: radius.md,
+    paddingHorizontal: 24,
+    height: 56,
+    borderRadius: 999,
     borderWidth: 1,
     borderColor: colors.primary,
     justifyContent: 'center',
   },
   btnSecondaryText: {
     color: colors.primary,
-    fontSize: fontSize.md,
-    fontWeight: '600',
+    fontFamily: 'Inter_700Bold',
+    fontSize: 17,
   },
-
-  // Loading
   loadingContainer: {
     flex: 1,
     backgroundColor: colors.background,
     alignItems: 'center',
     justifyContent: 'center',
-    padding: spacing.xl,
+    padding: 32,
   },
-  loadingSpinner: {
+  loadingRing: {
     width: 96,
     height: 96,
+    borderRadius: 48,
     alignItems: 'center',
     justifyContent: 'center',
-    marginBottom: spacing.lg,
+    marginBottom: 28,
   },
-  loadingEmoji: {
+  loadingArc: {
     position: 'absolute',
-    fontSize: 32,
+    width: 96,
+    height: 96,
+    borderRadius: 48,
+    borderWidth: 4,
+    borderColor: 'rgba(124,58,237,0.20)',
+    borderTopColor: colors.primary,
+    borderRightColor: colors.secondary,
+  },
+  loadingIcon: {
+    position: 'absolute',
+    width: 54,
+    height: 54,
+    borderRadius: 27,
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: colors.background,
   },
   loadingTitle: {
-    fontSize: fontSize.xl,
-    fontWeight: '700',
+    fontFamily: 'Inter_700Bold',
+    fontSize: 25,
+    lineHeight: 32,
     color: colors.textPrimary,
-    marginBottom: spacing.sm,
     textAlign: 'center',
-  },
-  loadingSubtitle: {
-    fontSize: fontSize.md,
-    color: colors.textSecondary,
-    textAlign: 'center',
-    lineHeight: 22,
   },
   pressed: {
     opacity: 0.8,

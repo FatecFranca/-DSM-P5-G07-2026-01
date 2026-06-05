@@ -8,118 +8,118 @@ import {
 } from 'react-native';
 import { router, useLocalSearchParams } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import Svg, { Polygon, Line, Circle, Text as SvgText } from 'react-native-svg';
-import { colors, spacing, radius, fontSize } from '@/constants/theme';
+import Svg, { Polygon, Line, Circle, Text as SvgText, Path } from 'react-native-svg';
+import { colors } from '@/constants/theme';
 
 const MOCK_TRACKS: Record<string, any> = {
-  t1: { id: 't1', title: 'Midnight City', artist: 'M83', cover: 'https://images.unsplash.com/photo-1614613535308-eb5fbd3d2c17?w=100&q=80', energy: 85, valence: 60, danceability: 70, acousticness: 5, instrumentalness: 40 },
-  t2: { id: 't2', title: 'Starboy', artist: 'The Weeknd', cover: 'https://images.unsplash.com/photo-1571444857442-8af5a5cd41c8?w=100&q=80', energy: 70, valence: 50, danceability: 80, acousticness: 10, instrumentalness: 5 },
-  t3: { id: 't3', title: 'Lost in Yesterday', artist: 'Tame Impala', cover: 'https://images.unsplash.com/photo-1514525253161-7a46d19cd819?w=100&q=80', energy: 65, valence: 75, danceability: 75, acousticness: 20, instrumentalness: 15 },
-  t4: { id: 't4', title: 'Levitating', artist: 'Dua Lipa', cover: 'https://images.unsplash.com/photo-1493225457124-a1a2a5f5287f?w=100&q=80', energy: 80, valence: 90, danceability: 85, acousticness: 5, instrumentalness: 0 },
-  t5: { id: 't5', title: 'Blinding Lights', artist: 'The Weeknd', cover: 'https://images.unsplash.com/photo-1618366712010-f4ae9c647dcb?w=100&q=80', energy: 90, valence: 85, danceability: 80, acousticness: 5, instrumentalness: 0 },
+  t1: { id: 't1', title: 'Midnight City', artist: 'M83', cover: 'https://images.unsplash.com/photo-1614613535308-eb5fbd3d2c17?w=120&q=80', energy: 85, valence: 60, danceability: 70, acousticness: 5, instrumentalness: 40 },
+  t2: { id: 't2', title: 'Starboy', artist: 'The Weeknd', cover: 'https://images.unsplash.com/photo-1571444857442-8af5a5cd41c8?w=120&q=80', energy: 70, valence: 50, danceability: 80, acousticness: 10, instrumentalness: 5 },
+  t3: { id: 't3', title: 'Lost in Yesterday', artist: 'Tame Impala', cover: 'https://images.unsplash.com/photo-1514525253161-7a46d19cd819?w=120&q=80', energy: 65, valence: 75, danceability: 75, acousticness: 20, instrumentalness: 15 },
+  t4: { id: 't4', title: 'Levitating', artist: 'Dua Lipa', cover: 'https://images.unsplash.com/photo-1493225457124-a1a2a5f5287f?w=120&q=80', energy: 80, valence: 90, danceability: 85, acousticness: 5, instrumentalness: 0 },
+  t5: { id: 't5', title: 'Blinding Lights', artist: 'The Weeknd', cover: 'https://images.unsplash.com/photo-1618366712010-f4ae9c647dcb?w=120&q=80', energy: 90, valence: 85, danceability: 80, acousticness: 5, instrumentalness: 0 },
 };
 
-// Componente do gráfico radar feito com SVG puro
-function RadarChart({ data }: { data: { label: string; value: number }[] }) {
-  const size = 240;
-  const center = size / 2;
-  const maxRadius = 90;
+type RadarItem = {
+  label: string;
+  value: number;
+};
+
+function RadarChart({ data }: { data: RadarItem[] }) {
+  const width = 350;
+  const height = 318;
+  const centerX = width / 2;
+  const centerY = height / 2;
+  const maxRadius = 104;
+  const labelRadius = 134;
   const levels = 4;
   const total = data.length;
 
-  // Calcula coordenadas de cada eixo
   const getCoords = (index: number, radius: number) => {
     const angle = (Math.PI * 2 * index) / total - Math.PI / 2;
     return {
-      x: center + radius * Math.cos(angle),
-      y: center + radius * Math.sin(angle),
+      x: centerX + radius * Math.cos(angle),
+      y: centerY + radius * Math.sin(angle),
     };
   };
 
-  // Polígono dos dados reais
   const dataPoints = data
-    .map((d, i) => {
-      const r = (d.value / 100) * maxRadius;
-      const { x, y } = getCoords(i, r);
+    .map((item, index) => {
+      const radius = (item.value / 100) * maxRadius;
+      const { x, y } = getCoords(index, radius);
       return `${x},${y}`;
     })
     .join(' ');
 
-  // Polígonos de grade (níveis)
   const gridPolygons = Array.from({ length: levels }, (_, level) => {
-    const r = (maxRadius / levels) * (level + 1);
-    return Array.from({ length: total }, (_, i) => {
-      const { x, y } = getCoords(i, r);
+    const radius = (maxRadius / levels) * (level + 1);
+    return Array.from({ length: total }, (_, index) => {
+      const { x, y } = getCoords(index, radius);
       return `${x},${y}`;
     }).join(' ');
   });
 
   return (
-    <Svg width={size} height={size}>
-      {/* Grade de fundo */}
-      {gridPolygons.map((points, i) => (
+    <Svg width={width} height={height}>
+      {gridPolygons.map((points, index) => (
         <Polygon
-          key={`grid-${i}`}
+          key={`grid-${index}`}
           points={points}
           fill="none"
-          stroke="rgba(255,255,255,0.08)"
+          stroke="rgba(255,255,255,0.10)"
           strokeWidth={1}
         />
       ))}
 
-      {/* Linhas dos eixos */}
-      {data.map((_, i) => {
-        const { x, y } = getCoords(i, maxRadius);
+      {data.map((_, index) => {
+        const { x, y } = getCoords(index, maxRadius);
         return (
           <Line
-            key={`axis-${i}`}
-            x1={center}
-            y1={center}
+            key={`axis-${index}`}
+            x1={centerX}
+            y1={centerY}
             x2={x}
             y2={y}
-            stroke="rgba(255,255,255,0.08)"
+            stroke="rgba(255,255,255,0.10)"
             strokeWidth={1}
           />
         );
       })}
 
-      {/* Polígono dos dados */}
       <Polygon
         points={dataPoints}
-        fill={`${colors.primary}80`}
+        fill="rgba(124,58,237,0.58)"
         stroke={colors.primary}
-        strokeWidth={2}
+        strokeWidth={2.5}
       />
 
-      {/* Pontos nos vértices */}
-      {data.map((d, i) => {
-        const r = (d.value / 100) * maxRadius;
-        const { x, y } = getCoords(i, r);
+      {data.map((item, index) => {
+        const radius = (item.value / 100) * maxRadius;
+        const { x, y } = getCoords(index, radius);
         return (
           <Circle
-            key={`dot-${i}`}
+            key={`dot-${item.label}`}
             cx={x}
             cy={y}
-            r={4}
+            r={5}
             fill={colors.secondary}
           />
         );
       })}
 
-      {/* Labels */}
-      {data.map((d, i) => {
-        const { x, y } = getCoords(i, maxRadius + 18);
+      {data.map((item, index) => {
+        const { x, y } = getCoords(index, labelRadius);
         return (
           <SvgText
-            key={`label-${i}`}
+            key={`label-${item.label}`}
             x={x}
             y={y}
             fill={colors.textSecondary}
-            fontSize={11}
+            fontSize={12}
+            fontWeight="600"
             textAnchor="middle"
             alignmentBaseline="middle"
           >
-            {d.label}
+            {item.label}
           </SvgText>
         );
       })}
@@ -134,7 +134,7 @@ export default function TrackDNAScreen() {
   if (!track) {
     return (
       <View style={styles.emptyContainer}>
-        <Text style={styles.emptyText}>Faixa não encontrada.</Text>
+        <Text style={styles.emptyText}>Faixa nao encontrada.</Text>
         <Pressable onPress={() => router.back()}>
           <Text style={styles.backLink}>Voltar</Text>
         </Pressable>
@@ -142,18 +142,15 @@ export default function TrackDNAScreen() {
     );
   }
 
-  const radarData = [
+  const radarData: RadarItem[] = [
     { label: 'Energia', value: track.energy },
-    { label: 'Valence', value: track.valence },
+    { label: 'Valência', value: track.valence },
     { label: 'Dança', value: track.danceability },
     { label: 'Acústico', value: track.acousticness },
     { label: 'Instrumental', value: track.instrumentalness },
   ];
 
-  const getTopAttribute = () => {
-    const top = radarData.reduce((a, b) => (a.value > b.value ? a : b));
-    return top;
-  };
+  const topAttribute = radarData.reduce((a, b) => (a.value > b.value ? a : b));
 
   return (
     <SafeAreaView style={styles.safe}>
@@ -161,21 +158,19 @@ export default function TrackDNAScreen() {
         showsVerticalScrollIndicator={false}
         contentContainerStyle={styles.scroll}
       >
-        {/* Header */}
         <View style={styles.header}>
           <View style={styles.headerTitle}>
-            <Text style={styles.sparkle}>✦</Text>
+            <SparkleIcon />
             <Text style={styles.title}>DNA da Faixa</Text>
           </View>
           <Pressable
             style={({ pressed }) => [styles.closeButton, pressed && styles.pressed]}
             onPress={() => router.back()}
           >
-            <Text style={styles.closeText}>✕</Text>
+            <CloseIcon />
           </Pressable>
         </View>
 
-        {/* Card da faixa */}
         <View style={styles.trackCard}>
           <Image source={{ uri: track.cover }} style={styles.trackCover} />
           <View style={styles.trackInfo}>
@@ -184,56 +179,61 @@ export default function TrackDNAScreen() {
           </View>
         </View>
 
-        {/* Gráfico radar */}
         <View style={styles.chartContainer}>
           <RadarChart data={radarData} />
         </View>
 
-        {/* Barras de atributos */}
         <View style={styles.barsContainer}>
           {radarData.map((item) => (
             <View key={item.label} style={styles.barRow}>
               <Text style={styles.barLabel}>{item.label}</Text>
               <View style={styles.barTrack}>
-                <View
-                  style={[
-                    styles.barFill,
-                    { width: `${item.value}%` },
-                  ]}
-                />
+                <View style={[styles.barFill, { width: `${item.value}%` }]} />
               </View>
               <Text style={styles.barValue}>{item.value}%</Text>
             </View>
           ))}
         </View>
 
-        {/* Explicação */}
         <View style={styles.explanationCard}>
           <Text style={styles.explanationTitle}>Por que foi recomendada?</Text>
           <Text style={styles.explanationText}>
-            Recomendada por ter{' '}
-            <Text style={styles.highlight}>{track.energy}% de energia</Text>
-            {' '}e{' '}
-            <Text style={styles.highlight}>{getTopAttribute().label} destacado</Text>
-            , ideal para o seu objetivo atual. A batida ajuda a manter o foco constante.
+            Recomendada por ter <Text style={styles.highlight}>{track.energy}% de energia</Text> e{' '}
+            <Text style={styles.highlight}>{topAttribute.label} destacado</Text>, ideal para o seu objetivo atual.
+            A batida ajuda a manter o foco constante.
           </Text>
 
-          {/* Tags de contexto */}
           <View style={styles.tags}>
             <View style={styles.tagPrimary}>
               <Text style={styles.tagPrimaryText}>Foco</Text>
             </View>
             <View style={styles.tagSecondary}>
-              <Text style={styles.tagSecondaryText}>Média Energia</Text>
+              <Text style={styles.tagSecondaryText}>Media Energia</Text>
             </View>
             <View style={styles.tagAccent}>
               <Text style={styles.tagAccentText}>Neutro</Text>
             </View>
           </View>
         </View>
-
       </ScrollView>
     </SafeAreaView>
+  );
+}
+
+function SparkleIcon() {
+  return (
+    <Svg width={22} height={22} viewBox="0 0 24 24" fill="none">
+      <Path d="M12 3l1.3 4.2L17.5 8.5l-4.2 1.3L12 14l-1.3-4.2-4.2-1.3 4.2-1.3L12 3z" stroke={colors.secondary} strokeWidth={1.8} strokeLinejoin="round" />
+      <Path d="M18 14l.7 2.2L21 17l-2.3.8L18 20l-.8-2.2L15 17l2.2-.8L18 14z" stroke={colors.secondary} strokeWidth={1.8} strokeLinejoin="round" />
+    </Svg>
+  );
+}
+
+function CloseIcon() {
+  return (
+    <Svg width={18} height={18} viewBox="0 0 24 24" fill="none">
+      <Path d="M6 6l12 12M18 6L6 18" stroke={colors.textSecondary} strokeWidth={2.2} strokeLinecap="round" />
+    </Svg>
   );
 }
 
@@ -243,167 +243,169 @@ const styles = StyleSheet.create({
     backgroundColor: colors.background,
   },
   scroll: {
-    paddingHorizontal: spacing.lg,
-    paddingBottom: spacing.xxl,
+    paddingHorizontal: 24,
+    paddingTop: 18,
+    paddingBottom: 42,
   },
   header: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    marginTop: spacing.md,
-    marginBottom: spacing.xl,
+    marginBottom: 28,
   },
   headerTitle: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: spacing.sm,
-  },
-  sparkle: {
-    fontSize: 18,
-    color: colors.secondary,
+    gap: 9,
   },
   title: {
-    fontSize: fontSize.lg,
-    fontWeight: '700',
+    fontFamily: 'Inter_800ExtraBold',
+    fontSize: 22,
+    lineHeight: 29,
     color: colors.textPrimary,
   },
   closeButton: {
-    width: 36,
-    height: 36,
-    borderRadius: radius.full,
-    backgroundColor: 'rgba(255,255,255,0.05)',
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    backgroundColor: 'rgba(255,255,255,0.06)',
     alignItems: 'center',
     justifyContent: 'center',
   },
-  closeText: {
-    fontSize: 14,
-    color: colors.textSecondary,
-  },
   trackCard: {
+    minHeight: 104,
     flexDirection: 'row',
     alignItems: 'center',
-    gap: spacing.md,
-    padding: spacing.md,
+    gap: 16,
+    padding: 16,
     backgroundColor: colors.surface,
-    borderRadius: radius.lg,
+    borderRadius: 20,
     borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.05)',
-    marginBottom: spacing.xl,
+    borderColor: 'rgba(255,255,255,0.06)',
+    marginBottom: 18,
   },
   trackCover: {
-    width: 64,
-    height: 64,
-    borderRadius: radius.md,
+    width: 68,
+    height: 68,
+    borderRadius: 14,
   },
   trackInfo: {
     flex: 1,
   },
   trackTitle: {
-    fontSize: fontSize.lg,
-    fontWeight: '700',
+    fontFamily: 'Inter_800ExtraBold',
+    fontSize: 21,
+    lineHeight: 27,
     color: colors.textPrimary,
-    marginBottom: spacing.xs,
+    marginBottom: 3,
   },
   trackArtist: {
-    fontSize: fontSize.sm,
+    fontFamily: 'Inter_400Regular',
+    fontSize: 15,
+    lineHeight: 21,
     color: colors.textSecondary,
   },
   chartContainer: {
     alignItems: 'center',
-    marginBottom: spacing.xl,
+    justifyContent: 'center',
+    marginTop: 2,
+    marginBottom: 12,
   },
   barsContainer: {
-    gap: spacing.sm,
-    marginBottom: spacing.xl,
+    gap: 11,
+    marginBottom: 32,
   },
   barRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: spacing.sm,
+    gap: 10,
   },
   barLabel: {
-    width: 80,
-    fontSize: fontSize.xs,
+    width: 86,
+    fontFamily: 'Inter_600SemiBold',
+    fontSize: 13,
     color: colors.textSecondary,
-    fontWeight: '500',
   },
   barTrack: {
     flex: 1,
     height: 6,
-    backgroundColor: 'rgba(255,255,255,0.08)',
-    borderRadius: radius.full,
+    backgroundColor: 'rgba(255,255,255,0.09)',
+    borderRadius: 999,
     overflow: 'hidden',
   },
   barFill: {
     height: '100%',
     backgroundColor: colors.primary,
-    borderRadius: radius.full,
+    borderRadius: 999,
   },
   barValue: {
-    width: 36,
-    fontSize: fontSize.xs,
+    width: 42,
+    fontFamily: 'Inter_500Medium',
+    fontSize: 13,
     color: colors.textSecondary,
     textAlign: 'right',
   },
   explanationCard: {
     backgroundColor: colors.surface,
-    borderRadius: radius.lg,
-    padding: spacing.lg,
+    borderRadius: 24,
+    padding: 24,
     borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.05)',
+    borderColor: 'rgba(255,255,255,0.06)',
   },
   explanationTitle: {
-    fontSize: fontSize.md,
-    fontWeight: '700',
+    fontFamily: 'Inter_800ExtraBold',
+    fontSize: 19,
+    lineHeight: 25,
     color: colors.textPrimary,
-    marginBottom: spacing.sm,
+    marginBottom: 12,
   },
   explanationText: {
-    fontSize: fontSize.sm,
+    fontFamily: 'Inter_400Regular',
+    fontSize: 16,
     color: colors.textSecondary,
-    lineHeight: 22,
-    marginBottom: spacing.md,
+    lineHeight: 25,
+    marginBottom: 18,
   },
   highlight: {
+    fontFamily: 'Inter_800ExtraBold',
     color: colors.textPrimary,
-    fontWeight: '700',
   },
   tags: {
     flexDirection: 'row',
     flexWrap: 'wrap',
-    gap: spacing.sm,
+    gap: 10,
   },
   tagPrimary: {
-    paddingHorizontal: spacing.md,
-    paddingVertical: spacing.xs,
+    paddingHorizontal: 14,
+    paddingVertical: 8,
     backgroundColor: `${colors.primary}33`,
-    borderRadius: radius.full,
+    borderRadius: 999,
   },
   tagPrimaryText: {
-    fontSize: fontSize.xs,
-    fontWeight: '700',
+    fontFamily: 'Inter_800ExtraBold',
+    fontSize: 12,
     color: colors.primary,
   },
   tagSecondary: {
-    paddingHorizontal: spacing.md,
-    paddingVertical: spacing.xs,
+    paddingHorizontal: 14,
+    paddingVertical: 8,
     backgroundColor: `${colors.secondary}33`,
-    borderRadius: radius.full,
+    borderRadius: 999,
   },
   tagSecondaryText: {
-    fontSize: fontSize.xs,
-    fontWeight: '700',
+    fontFamily: 'Inter_800ExtraBold',
+    fontSize: 12,
     color: colors.secondary,
   },
   tagAccent: {
-    paddingHorizontal: spacing.md,
-    paddingVertical: spacing.xs,
+    paddingHorizontal: 14,
+    paddingVertical: 8,
     backgroundColor: `${colors.accent}33`,
-    borderRadius: radius.full,
+    borderRadius: 999,
   },
   tagAccentText: {
-    fontSize: fontSize.xs,
-    fontWeight: '700',
+    fontFamily: 'Inter_800ExtraBold',
+    fontSize: 12,
     color: colors.accent,
   },
   emptyContainer: {
@@ -411,18 +413,19 @@ const styles = StyleSheet.create({
     backgroundColor: colors.background,
     alignItems: 'center',
     justifyContent: 'center',
-    gap: spacing.md,
+    gap: 16,
   },
   emptyText: {
-    fontSize: fontSize.md,
+    fontFamily: 'Inter_400Regular',
+    fontSize: 16,
     color: colors.textSecondary,
   },
   backLink: {
-    fontSize: fontSize.md,
+    fontFamily: 'Inter_700Bold',
+    fontSize: 16,
     color: colors.primary,
-    fontWeight: '600',
   },
   pressed: {
-    opacity: 0.7,
+    opacity: 0.72,
   },
 });

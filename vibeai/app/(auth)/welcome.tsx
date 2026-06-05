@@ -1,53 +1,40 @@
-import { View, Text, StyleSheet, Pressable } from 'react-native';
+import React from 'react';
+import { ImageBackground, View, Text, StyleSheet, Pressable } from 'react-native';
 import { router } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { LinearGradient } from 'expo-linear-gradient';
-import { BlurView } from 'expo-blur';
+import MaskedView from '@react-native-masked-view/masked-view';
 import Svg, { Path } from 'react-native-svg';
-import { useFonts, Inter_400Regular, Inter_700Bold, Inter_800ExtraBold } from '@expo-google-fonts/inter';
-import { colors, spacing, radius, fontSize } from '@/constants/theme';
+
+const PRIMARY   = '#7C3AED';
+const SECONDARY = '#22D3EE';
+const TEXT_SEC  = '#A7B0C0';
+const WELCOME_BG = require('@/assets/images/welcome-bg.png');
 
 function VibeIcon() {
   return (
-    <Svg width={32} height={32} viewBox="0 0 24 24" fill="white">
+    <Svg width={36} height={36} viewBox="0 0 24 24" fill="white">
       <Path d="M12 2C6.477 2 2 6.477 2 12s4.477 10 10 10 10-4.477 10-10S17.523 2 12 2zm0 14.5c-2.485 0-4.5-2.015-4.5-4.5S9.515 7.5 12 7.5s4.5 2.015 4.5 4.5-2.015 4.5-4.5 4.5zm0-7a2.5 2.5 0 100 5 2.5 2.5 0 000-5z" />
     </Svg>
   );
 }
 
 export default function WelcomeScreen() {
-  const [fontsLoaded] = useFonts({
-    Inter_400Regular,
-    Inter_700Bold,
-    Inter_800ExtraBold,
-  });
-
-  if (!fontsLoaded) return null;
-
   return (
     <View style={styles.container}>
-
-      {/* Gradiente topo */}
-      <LinearGradient
-        colors={['rgba(124,58,237,0.35)', 'transparent']}
-        style={styles.gradientTop}
+      <ImageBackground
+        source={WELCOME_BG}
+        resizeMode="stretch"
+        style={StyleSheet.absoluteFill}
       />
-
-      {/* Brilho ciano top-right com blur */}
-      <BlurView intensity={80} style={styles.glowCyan} />
-      <View style={styles.glowCyanCore} />
-
-      {/* Brilho rosa bottom-left com blur */}
-      <BlurView intensity={80} style={styles.glowPink} />
-      <View style={styles.glowPinkCore} />
 
       <SafeAreaView style={styles.safeArea}>
         <View style={styles.content}>
 
           {/* Logo */}
-          <View style={styles.logoWrapper}>
+          <View style={styles.logoShadow}>
             <LinearGradient
-              colors={[colors.primary, colors.secondary]}
+              colors={[PRIMARY, SECONDARY]}
               start={{ x: 0, y: 1 }}
               end={{ x: 1, y: 0 }}
               style={styles.logoBox}
@@ -56,30 +43,47 @@ export default function WelcomeScreen() {
             </LinearGradient>
           </View>
 
-          {/* Título */}
-          <Text style={styles.title}>Descubra sua Vibe</Text>
+          {/* Titulo com gradiente branco para cinza */}
+          <MaskedView
+            style={{ marginBottom: 12 }}
+            maskElement={
+              <Text style={styles.title}>Descubra sua Vibe</Text>
+            }
+          >
+            <LinearGradient
+              colors={['#FFFFFF', '#9CA3AF']}
+              start={{ x: 0, y: 0 }}
+              end={{ x: 1, y: 0 }}
+            >
+              <Text style={[styles.title, { opacity: 0 }]}>
+                Descubra sua Vibe
+              </Text>
+            </LinearGradient>
+          </MaskedView>
 
-          {/* Subtítulo */}
+          {/* Subtitulo */}
           <Text style={styles.subtitle}>
             O primeiro streaming inteligente guiado pelo seu humor e contexto.
           </Text>
 
-          {/* Botões */}
+          {/* Botoes */}
           <View style={styles.buttons}>
 
-            <Pressable
-              style={({ pressed }) => [styles.btnPrimary, pressed && styles.pressed]}
-              onPress={() => router.push('/(auth)/login')}
-            >
-              <LinearGradient
-                colors={[colors.primary, colors.secondary]}
-                start={{ x: 0, y: 0 }}
-                end={{ x: 1, y: 0 }}
-                style={styles.btnGradient}
+            <View style={styles.btnPrimaryGlow}>
+              <Pressable
+                style={({ pressed }) => [styles.btnPrimaryHit, pressed && styles.pressed]}
+                onPress={() => router.push('/(auth)/login')}
               >
-                <Text style={styles.btnPrimaryText}>Entrar</Text>
-              </LinearGradient>
-            </Pressable>
+                <LinearGradient
+                  colors={[PRIMARY, SECONDARY]}
+                  start={{ x: 0, y: 0 }}
+                  end={{ x: 1, y: 0 }}
+                  style={styles.btnGradient}
+                >
+                  <Text style={styles.btnPrimaryText}>Entrar</Text>
+                </LinearGradient>
+              </Pressable>
+            </View>
 
             <Pressable
               style={({ pressed }) => [styles.btnSecondary, pressed && styles.pressed]}
@@ -98,50 +102,8 @@ export default function WelcomeScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: colors.background,
-  },
-  gradientTop: {
-    position: 'absolute',
-    top: 0,
-    left: 0,
-    right: 0,
-    height: '60%',
-  },
-  glowCyan: {
-    position: 'absolute',
-    top: -120,
-    right: -120,
-    width: 360,
-    height: 360,
-    borderRadius: 180,
+    backgroundColor: '#0B0F1A',
     overflow: 'hidden',
-  },
-  glowCyanCore: {
-    position: 'absolute',
-    top: -120,
-    right: -120,
-    width: 360,
-    height: 360,
-    borderRadius: 180,
-    backgroundColor: 'rgba(34,211,238,0.22)',
-  },
-  glowPink: {
-    position: 'absolute',
-    bottom: -120,
-    left: -120,
-    width: 360,
-    height: 360,
-    borderRadius: 180,
-    overflow: 'hidden',
-  },
-  glowPinkCore: {
-    position: 'absolute',
-    bottom: -120,
-    left: -120,
-    width: 360,
-    height: 360,
-    borderRadius: 180,
-    backgroundColor: 'rgba(244,114,182,0.18)',
   },
   safeArea: {
     flex: 1,
@@ -150,67 +112,83 @@ const styles = StyleSheet.create({
     flex: 1,
     justifyContent: 'flex-end',
     alignItems: 'center',
-    paddingHorizontal: spacing.lg,
-    paddingBottom: spacing.xxl,
+    paddingHorizontal: 24,
+    paddingBottom: 48,
   },
-  logoWrapper: {
-    marginBottom: spacing.xl,
+  logoShadow: {
+    marginBottom: 26,
+    borderRadius: 18,
+    shadowColor: PRIMARY,
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.45,
+    shadowRadius: 16,
+    elevation: 10,
   },
   logoBox: {
     width: 72,
     height: 72,
-    borderRadius: 20,
+    borderRadius: 18,
     alignItems: 'center',
     justifyContent: 'center',
   },
   title: {
     fontFamily: 'Inter_800ExtraBold',
-    fontSize: fontSize.xxl,
-    color: colors.textPrimary,
+    fontSize: 38,
     textAlign: 'center',
-    marginBottom: spacing.sm,
+    color: '#FFFFFF',
   },
   subtitle: {
     fontFamily: 'Inter_400Regular',
-    fontSize: fontSize.md,
-    color: colors.textSecondary,
+    fontSize: 17,
+    color: TEXT_SEC,
     textAlign: 'center',
-    marginBottom: spacing.xl,
-    lineHeight: 24,
-    maxWidth: 280,
+    marginBottom: 34,
+    lineHeight: 25,
+    maxWidth: 330,
   },
   buttons: {
     width: '100%',
-    gap: spacing.md,
+    maxWidth: 390,
+    gap: 16,
   },
-  btnPrimary: {
+  btnPrimaryGlow: {
     width: '100%',
-    borderRadius: radius.full,
+    borderRadius: 999,
+    shadowColor: PRIMARY,
+    shadowOffset: { width: 0, height: 0 },
+    shadowOpacity: 0.65,
+    shadowRadius: 22,
+    elevation: 14,
+  },
+  btnPrimaryHit: {
+    width: '100%',
+    borderRadius: 999,
     overflow: 'hidden',
   },
   btnGradient: {
-    paddingVertical: spacing.md + 2,
+    height: 56,
     alignItems: 'center',
-    borderRadius: radius.full,
+    justifyContent: 'center',
   },
   btnPrimaryText: {
     fontFamily: 'Inter_700Bold',
-    color: colors.textPrimary,
-    fontSize: fontSize.md,
+    color: '#FFFFFF',
+    fontSize: 17,
   },
   btnSecondary: {
     width: '100%',
-    borderRadius: radius.full,
+    borderRadius: 999,
     borderWidth: 1,
-    borderColor: 'rgba(124,58,237,0.5)',
-    paddingVertical: spacing.md + 2,
+    borderColor: 'rgba(255,255,255,0.08)',
+    height: 56,
     alignItems: 'center',
-    backgroundColor: 'rgba(124,58,237,0.08)',
+    justifyContent: 'center',
+    backgroundColor: '#111827',
   },
   btnSecondaryText: {
     fontFamily: 'Inter_700Bold',
-    color: colors.primary,
-    fontSize: fontSize.md,
+    color: '#FFFFFF',
+    fontSize: 17,
   },
   pressed: {
     opacity: 0.8,

@@ -1,0 +1,19 @@
+<svg width="400" height="850" viewBox="0 0 400 850" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <rect width="400" height="850" fill="#0B0F1A"/>
+  <rect width="400" height="566" fill="url(#grad1)" fill-opacity="0.2"/>
+  <g filter="url(#blur1)">
+    <circle cx="400" cy="0" r="192" fill="#22D3EE" fill-opacity="0.2"/>
+  </g>
+  <g filter="url(#blur1)">
+    <circle cx="0" cy="850" r="192" fill="#F472B6" fill-opacity="0.2"/>
+  </g>
+  <defs>
+    <filter id="blur1" x="-100" y="-100" width="1000" height="1000" filterUnits="userSpaceOnUse">
+      <feGaussianBlur stdDeviation="50"/>
+    </filter>
+    <linearGradient id="grad1" x1="200" y1="0" x2="200" y2="566" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#7C3AED"/>
+      <stop offset="1" stop-color="#7C3AED" stop-opacity="0"/>
+    </linearGradient>
+  </defs>
+</svg>
