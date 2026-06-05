@@ -18,7 +18,10 @@ from fastapi import FastAPI
 from pydantic import BaseModel, Field
 
 
-BASE_DIR = Path(__file__).resolve().parent.parent
+BASE_DIR = Path(__file__).resolve().parent
+
+
+
 MODEL_PATH = BASE_DIR / "modelos" / "model.pkl"
 SCALER_PATH = BASE_DIR / "modelos" / "scaler.pkl"
 FEATURES_PATH = BASE_DIR / "modelos" / "features.pkl"

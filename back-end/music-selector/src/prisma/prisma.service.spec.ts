@@ -13,10 +13,6 @@ describe('PrismaService', () => {
             user: {},
             track: {},
             playlist: {},
-            feedback: {},
-            genre: {},
-            userGenre: {},
-            onboardingProfile: {},
             playlistTrack: {},
             $connect: jest.fn(),
             $disconnect: jest.fn(),
@@ -46,10 +42,6 @@ describe('PrismaService', () => {
       expect(service.user).toBeDefined();
       expect(service.track).toBeDefined();
       expect(service.playlist).toBeDefined();
-      expect(service.feedback).toBeDefined();
-      expect(service.genre).toBeDefined();
-      expect(service.userGenre).toBeDefined();
-      expect(service.onboardingProfile).toBeDefined();
       expect(service.playlistTrack).toBeDefined();
     });
   });
@@ -88,26 +80,6 @@ describe('PrismaService', () => {
     it('should return playlist model', () => {
       const playlistModel = service.playlist;
       expect(playlistModel).toBeDefined();
-    });
-
-    it('should return feedback model', () => {
-      const feedbackModel = service.feedback;
-      expect(feedbackModel).toBeDefined();
-    });
-
-    it('should return genre model', () => {
-      const genreModel = service.genre;
-      expect(genreModel).toBeDefined();
-    });
-
-    it('should return userGenre model', () => {
-      const userGenreModel = service.userGenre;
-      expect(userGenreModel).toBeDefined();
-    });
-
-    it('should return onboardingProfile model', () => {
-      const onboardingProfileModel = service.onboardingProfile;
-      expect(onboardingProfileModel).toBeDefined();
     });
 
     it('should return playlistTrack model', () => {

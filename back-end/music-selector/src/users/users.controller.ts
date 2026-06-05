@@ -7,7 +7,7 @@ import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { AdminGuard } from '../auth/guards/admin.guard';
 import { CreateUserDto } from './dto/create-user.dto';
 import { UpdateUserDto } from './dto/update-user.dto';
-import { CompleteOnboardingDto } from './dto/complete-onboarding.dto';
+
 import { RequestPasswordResetDto } from './dto/request-password-reset.dto';
 import { ResetPasswordDto } from './dto/reset-password.dto';
 
@@ -120,52 +120,7 @@ export class UsersController {
     return this.usersService.resetPassword(dto.token, dto.password, dto.passwordConfirmation);
   }
 
-  @Post(':id/onboarding')
-  @UseGuards(JwtAuthGuard)
-  @HttpCode(200)
-  @ApiParam({ name: 'id', description: 'ID do usuário' })
-  @ApiOperation({
-    summary: '🎸 Completar Onboarding',
-    description: 'RN10-RN13: Wizard 3 passos (1-5 gêneros, estilo escuta, pref vocal/instrumental). Inclui atributos ML (danceability, energy, valence, acousticness, instrumentalness, speechiness).',
-  })
-  @ApiResponse({
-    status: 200,
-    description: 'Onboarding completado - Pronto para usar recomendações',
-    schema: {
-      example: {
-        message: '✅ Onboarding completado com sucesso',
-        userId: 'uuid-123',
-        favoriteGenres: ['rock', 'indie', 'pop'],
-        audioPreference: 'mixed',
-        danceability: 0.7,
-        energy: 0.8,
-        valence: 0.6,
-        acousticness: 0.4,
-        instrumentalness: 0.2,
-        speechiness: 0.1,
-      },
-    },
-  })
-  @ApiResponse({ status: 400, description: '❌ Gêneros inválidos ou audioPreference fora do padrão' })
-  @ApiResponse({ status: 401, description: '❌ JWT inválido' })
-  async completeOnboarding(
-    @Param('id') userId: string,
-    @Body() body: CompleteOnboardingDto,
-  ) {
-    this.logger.log(`🎸 Onboarding completion: ${userId}`);
-    return this.usersService.completeOnboarding(
-      userId,
-      body.favoriteGenres,
-      body.audioPreference,
-      body.danceability,
-      body.energy,
-      body.valence,
-      body.acousticness,
-      body.instrumentalness,
-      body.speechiness,
-    );
-  }
-
+ 
   @Patch(':id')
   @UseGuards(JwtAuthGuard)
   @HttpCode(200)

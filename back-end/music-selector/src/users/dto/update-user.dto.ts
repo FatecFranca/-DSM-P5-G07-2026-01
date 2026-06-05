@@ -1,12 +1,9 @@
 import {
-  IsString,
-  IsOptional,
-  Length,
-  IsNumber,
-  Max,
-  Matches,
-  Min,
   IsNotEmpty,
+  IsOptional,
+  IsString,
+  Length,
+  Matches,
   ValidateIf,
 } from 'class-validator';
 import { ApiProperty } from '@nestjs/swagger';
@@ -14,107 +11,38 @@ import { MatchProperty } from '../../common/validators/match-property.validator'
 
 export class UpdateUserDto {
   @ApiProperty({
-    example: 'João Silva',
-    description: 'Nome do usuário (máx 50 chars)',
+    example: 'Joao Silva',
+    description: 'Nome do usuario',
     required: false,
   })
   @IsOptional()
   @IsString({ message: 'Nome deve ser uma string' })
   @Length(1, 50, { message: 'Nome deve ter entre 1 e 50 caracteres' })
   @Matches(/^[a-zA-ZÀ-ÿ\s]+$/, {
-    message: 'Nome não pode conter números ou caracteres especiais',
+    message: 'Nome nao pode conter numeros ou caracteres especiais',
   })
   name?: string;
 
   @ApiProperty({
     example: 'NovaSenha456',
-    description: 'Nova senha (8+ chars, letra + número)',
+    description: 'Nova senha',
     required: false,
   })
   @IsOptional()
   @IsString({ message: 'Senha deve ser uma string' })
-  @Length(8, 128, { message: 'Senha deve ter no mínimo 8 caracteres' })
+  @Length(8, 128, { message: 'Senha deve ter no minimo 8 caracteres' })
   @Matches(/[a-zA-Z]/, { message: 'Senha deve conter pelo menos uma letra' })
-  @Matches(/\d/, { message: 'Senha deve conter pelo menos um número' })
+  @Matches(/\d/, { message: 'Senha deve conter pelo menos um numero' })
   password?: string;
 
   @ApiProperty({
     example: 'NovaSenha456',
-    description: 'Confirmação da nova senha',
+    description: 'Confirmacao da nova senha',
     required: false,
   })
   @IsOptional()
   @ValidateIf((dto) => dto.password !== undefined)
-  @IsNotEmpty({ message: 'Confirmação de senha é obrigatória' })
-  @MatchProperty('password', { message: 'Senhas não correspondem' })
+  @IsNotEmpty({ message: 'Confirmacao de senha e obrigatoria' })
+  @MatchProperty('password', { message: 'Senhas nao correspondem' })
   passwordConfirmation?: string;
-
-  @ApiProperty({
-    example: 'rock,indie,jazz',
-    description: 'Gêneros favoritos (1-5, separados por vírgula)',
-    required: false,
-  })
-  @IsOptional()
-  @Matches(/^[a-zA-Z0-9_-]+(,[a-zA-Z0-9_-]+){0,4}$/, {
-    message: 'Máximo 5 gêneros separados por vírgula (sem espaços)',
-  })
-  favoriteGenres?: string;
-
-  @ApiProperty({
-    example: 'vocal',
-    description: 'Preferência de áudio (instrumental, mixed ou vocal)',
-    enum: ['instrumental', 'mixed', 'vocal'],
-    required: false,
-  })
-  @IsOptional()
-  @Matches(/^(instrumental|mixed|vocal)$/i, {
-    message: 'Preferência deve ser: instrumental, mixed ou vocal',
-  })
-  audioPreference?: 'instrumental' | 'mixed' | 'vocal';
-
-  @ApiProperty({ example: 0.7, description: 'Danceability (0.0-1.0)', required: false })
-  @IsOptional()
-  @IsNumber({}, { message: 'Danceability deve ser número' })
-  @Min(0, { message: 'Danceability deve ser >= 0' })
-  @Max(1, { message: 'Danceability deve ser <= 1' })
-  danceability?: number;
-
-  @ApiProperty({ example: 0.8, description: 'Energy (0.0-1.0)', required: false })
-  @IsOptional()
-  @IsNumber({}, { message: 'Energy deve ser número' })
-  @Min(0, { message: 'Energy deve ser >= 0' })
-  @Max(1, { message: 'Energy deve ser <= 1' })
-  energy?: number;
-
-  @ApiProperty({ example: 0.6, description: 'Valence (0.0-1.0)', required: false })
-  @IsOptional()
-  @IsNumber({}, { message: 'Valence deve ser número' })
-  @Min(0, { message: 'Valence deve ser >= 0' })
-  @Max(1, { message: 'Valence deve ser <= 1' })
-  valence?: number;
-
-  @ApiProperty({ example: 0.4, description: 'Acousticness (0.0-1.0)', required: false })
-  @IsOptional()
-  @IsNumber({}, { message: 'Acousticness deve ser número' })
-  @Min(0, { message: 'Acousticness deve ser >= 0' })
-  @Max(1, { message: 'Acousticness deve ser <= 1' })
-  acousticness?: number;
-
-  @ApiProperty({ example: 0.2, description: 'Instrumentalness (0.0-1.0)', required: false })
-  @IsOptional()
-  @IsNumber({}, { message: 'Instrumentalness deve ser número' })
-  @Min(0, { message: 'Instrumentalness deve ser >= 0' })
-  @Max(1, { message: 'Instrumentalness deve ser <= 1' })
-  instrumentalness?: number;
-
-  @ApiProperty({ example: 0.1, description: 'Speechiness (0.0-1.0)', required: false })
-  @IsOptional()
-  @IsNumber({}, { message: 'Speechiness deve ser número' })
-  @Min(0, { message: 'Speechiness deve ser >= 0' })
-  @Max(1, { message: 'Speechiness deve ser <= 1' })
-  speechiness?: number;
-
-  // RN26: Email e dateOfBirth são IMUTÁVEIS - não incluir no DTO
-  // Se tentar enviar, serão ignorados pelo whitelist do ValidationPipe
 }
-

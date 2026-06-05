@@ -5,7 +5,6 @@ import { RecommendationsService } from './recommendations.service';
 import { PrismaService } from '../prisma/prisma.service';
 import { MLService } from './services/ml.service';
 import { PlaylistService } from './services/playlist.service';
-import { FeedbackService } from './services/feedback.service';
 import { PlaylistGeneratorService } from './services/playlist-generator.service';
 
 @Module({
@@ -15,7 +14,6 @@ import { PlaylistGeneratorService } from './services/playlist-generator.service'
     RecommendationsService,
     PlaylistGeneratorService,
     PlaylistService,
-    FeedbackService,
     MLService,
     PrismaService,
   ],

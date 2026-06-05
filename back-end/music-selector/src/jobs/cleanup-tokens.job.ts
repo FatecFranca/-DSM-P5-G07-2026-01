@@ -1,5 +1,5 @@
 import { Injectable, Logger } from '@nestjs/common';
-import { Cron, CronExpression } from '@nestjs/schedule';
+import { Cron } from '@nestjs/schedule';
 import { PrismaService } from '../prisma/prisma.service';
 
 /**
@@ -7,9 +7,8 @@ import { PrismaService } from '../prisma/prisma.service';
  * Executa automaticamente para evitar acúmulo no banco de dados
  *
  * Cron: '0 2 * * *' = Executa todo dia às 02:00
- * 
+ *
  * Por que 02:00? Para não conflitar com:
- * - 00:00 (DailyVibesJob)
  * - Picos de uso durante o dia
  */
 @Injectable()
@@ -40,7 +39,9 @@ export class CleanupTokensJob {
         return;
       }
 
-      this.logger.debug(`📊 Encontrados ${expiredTokens.length} tokens expirados`);
+      this.logger.debug(
+        `📊 Encontrados ${expiredTokens.length} tokens expirados`,
+      );
 
       // Deletar tokens expirados
       const result = await this.prisma.passwordResetToken.deleteMany({
@@ -58,9 +59,7 @@ export class CleanupTokensJob {
         const emailsDeleted = expiredTokens
           .map((t) => t.email)
           .filter((v, i, a) => a.indexOf(v) === i); // unique
-        this.logger.debug(
-          `📧 Emails afetados: ${emailsDeleted.join(', ')}`,
-        );
+        this.logger.debug(`📧 Emails afetados: ${emailsDeleted.join(', ')}`);
       }
     } catch (error: any) {
       this.logger.error(

@@ -3,7 +3,6 @@ import { PrismaService } from '../prisma/prisma.service';
 import { CreateUserDto } from './dto/create-user.dto';
 import { UpdateUserDto } from './dto/update-user.dto';
 import { EmailService } from './services/email.service';
-import { DailyVibesJob } from '../jobs/daily-vibes.job';
 import * as bcrypt from 'bcrypt';
 import { randomBytes } from 'crypto';
 
@@ -12,7 +11,6 @@ export class UsersService {
   constructor(
     private prisma: PrismaService,
     private emailService: EmailService,
-    private dailyVibesJob: DailyVibesJob,
   ) {}
 
   /**
@@ -40,7 +38,7 @@ export class UsersService {
           email: dto.email,
           birthDate: new Date(dto.dateOfBirth),
           passwordHash,
-          onboardingDone: false,
+         
         },
       });
 
@@ -201,14 +199,6 @@ export class UsersService {
    */
   async completeOnboarding(
     userId: string,
-    favoriteGenres: string[],
-    audioPreference: string,
-    danceability: number,
-    energy: number,
-    valence: number,
-    acousticness: number,
-    instrumentalness: number,
-    speechiness: number,
   ) {
     try {
       const user = await this.prisma.user.findUnique({
@@ -225,61 +215,14 @@ export class UsersService {
         data: { onboardingDone: true },
       });
 
-      // Criar/atualizar perfil de onboarding
-      const normalizedPreference = this.normalizeAudioPreference(audioPreference);
-      await this.prisma.onboardingProfile.upsert({
-        where: { userId },
-        create: {
-          userId,
-          audioPreference: normalizedPreference as any,
-          danceability,
-          energy,
-          valence,
-          acousticness,
-          instrumentalness,
-          speechiness,
-        },
-        update: {
-          audioPreference: normalizedPreference as any,
-          danceability,
-          energy,
-          valence,
-          acousticness,
-          instrumentalness,
-          speechiness,
-        },
-      });
-
-      // Associar gêneros favoritos
-      if (favoriteGenres && favoriteGenres.length > 0) {
-        // RN11: Validar 1-5 gêneros
-        if (favoriteGenres.length < 1 || favoriteGenres.length > 5) {
-          throw new BadRequestException('Selecione entre 1 e 5 gêneros');
-        }
-
-        // Limpar gêneros antigos
-        await this.prisma.userGenre.deleteMany({
-          where: { userId },
-        });
-
-        // Adicionar novos gêneros
-        for (const genreId of favoriteGenres) {
-          await this.prisma.userGenre.create({
-            data: {
-              userId,
-              genreId,
-            },
-          });
-        }
-      }
-
       return {
         message: 'Onboarding completado com sucesso',
         userId,
       };
     } catch (error: any) {
-      throw new InternalServerErrorException('Erro ao completar onboarding');
-    }
+  console.error('ERRO ONBOARDING:', error);
+  throw error;
+}
   }
 
   /**
@@ -309,80 +252,11 @@ export class UsersService {
         updateData.passwordHash = passwordHash;
       }
 
-      // RN27: Atualizar preferências de onboarding se fornecidas
-      if (
-        dto.audioPreference ||
-        dto.danceability !== undefined ||
-        dto.energy !== undefined ||
-        dto.valence !== undefined ||
-        dto.acousticness !== undefined ||
-        dto.instrumentalness !== undefined ||
-        dto.speechiness !== undefined
-      ) {
-        const normalizedPreference = dto.audioPreference
-          ? this.normalizeAudioPreference(dto.audioPreference)
-          : undefined;
-
-        await this.prisma.onboardingProfile.upsert({
-          where: { userId: id },
-          create: {
-            userId: id,
-            audioPreference: (normalizedPreference || 'MIXED') as any,
-            danceability: dto.danceability ?? 0,
-            energy: dto.energy ?? 0,
-            valence: dto.valence ?? 0,
-            acousticness: dto.acousticness ?? 0,
-            instrumentalness: dto.instrumentalness ?? 0,
-            speechiness: dto.speechiness ?? 0,
-          },
-          update: {
-            ...(normalizedPreference ? { audioPreference: normalizedPreference as any } : {}),
-            ...(dto.danceability !== undefined ? { danceability: dto.danceability } : {}),
-            ...(dto.energy !== undefined ? { energy: dto.energy } : {}),
-            ...(dto.valence !== undefined ? { valence: dto.valence } : {}),
-            ...(dto.acousticness !== undefined ? { acousticness: dto.acousticness } : {}),
-            ...(dto.instrumentalness !== undefined ? { instrumentalness: dto.instrumentalness } : {}),
-            ...(dto.speechiness !== undefined ? { speechiness: dto.speechiness } : {}),
-          },
-        });
-      }
-
-      if (dto.favoriteGenres) {
-        // RN11: Validar 1-5 gêneros
-        const genreCount = dto.favoriteGenres.split(',').length;
-        if (genreCount < 1 || genreCount > 5) {
-          throw new BadRequestException('Selecione entre 1 e 5 gêneros');
-        }
-
-        // Atualizar gêneros
-        await this.prisma.userGenre.deleteMany({
-          where: { userId: id },
-        });
-
-        for (const genreId of dto.favoriteGenres.split(',')) {
-          await this.prisma.userGenre.create({
-            data: {
-              userId: id,
-              genreId: genreId.trim(),
-            },
-          });
-        }
-      }
-
       // Atualizar usuário se houver mudanças
       if (Object.keys(updateData).length > 0) {
         await this.prisma.user.update({
           where: { id },
           data: updateData,
-        });
-      }
-
-      // RN28: Recalcular vibes diárias quando gêneros ou áudio preference mudam
-      // Disparar job de forma assíncrona (non-blocking)
-      if (dto.audioPreference || dto.favoriteGenres) {
-        this.dailyVibesJob.triggerVibeRecalculation(id).catch((err) => {
-          // Log silencioso para não bloquear a resposta
-          console.warn(`⚠️ Erro ao recalcular vibes: ${err?.message}`);
         });
       }
 
@@ -414,11 +288,7 @@ export class UsersService {
 
       // RN30: Anonimizar dados sensíveis
       // Desassociar feedbacks do usuário (deixar userId null)
-      await this.prisma.feedback.updateMany({
-        where: { userId: id },
-        data: { userId: null },
-      });
-
+      
       const anonymizedEmail = `deleted_${id}@deleted.local`;
       const anonymizedPassword = await bcrypt.hash(
         randomBytes(16).toString('hex'),
@@ -512,12 +382,4 @@ export class UsersService {
     return { message: 'Usuário removido permanentemente' };
   }
 
-  private normalizeAudioPreference(value: string) {
-    const normalized = value.trim().toUpperCase();
-    if (normalized === 'INSTRUMENTAL' || normalized === 'MIXED' || normalized === 'VOCAL') {
-      return normalized;
-    }
-
-    throw new BadRequestException('Preferência deve ser: instrumental, mixed ou vocal');
-  }
 }

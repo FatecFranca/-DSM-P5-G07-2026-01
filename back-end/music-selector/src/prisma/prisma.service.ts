@@ -60,22 +60,6 @@ export class PrismaService implements OnModuleInit, OnModuleDestroy {
     return this.prismaClient.playlist;
   }
 
-  get feedback() {
-    return this.prismaClient.feedback;
-  }
-
-  get genre() {
-    return this.prismaClient.genre;
-  }
-
-  get userGenre() {
-    return this.prismaClient.userGenre;
-  }
-
-  get onboardingProfile() {
-    return this.prismaClient.onboardingProfile;
-  }
-
   get playlistTrack() {
     return this.prismaClient.playlistTrack;
   }

@@ -104,8 +104,6 @@ describe('UsersController', () => {
   describe('completeOnboarding', () => {
     it('should complete user onboarding', async () => {
       const onboardingDto = {
-        favoriteGenres: ['rock', 'pop'],
-        audioPreference: 'VOCAL',
       };
 
       const expectedResponse = { ...mockUserResponse, onboardingDone: true };
@@ -119,11 +117,7 @@ describe('UsersController', () => {
       );
 
       expect(result).toEqual(expectedResponse);
-      expect(service.completeOnboarding).toHaveBeenCalledWith(
-        'user123',
-        onboardingDto.favoriteGenres,
-        onboardingDto.audioPreference,
-      );
+      expect(service.completeOnboarding).toHaveBeenCalledWith('user123');
     });
   });
 

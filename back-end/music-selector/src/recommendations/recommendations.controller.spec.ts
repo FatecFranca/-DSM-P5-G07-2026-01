@@ -1,7 +1,12 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { RecommendationsController } from './recommendations.controller';
 import { RecommendationsService } from './recommendations.service';
-import { GetRecommendationsDto, ObjectiveType, MoodType, EnergyLevelType } from './dto/get-recommendations.dto';
+import {
+  GetRecommendationsDto,
+  ObjectiveType,
+  MoodType,
+  EnergyLevelType,
+} from './dto/get-recommendations.dto';
 
 describe('RecommendationsController', () => {
   let controller: RecommendationsController;
@@ -20,6 +25,7 @@ describe('RecommendationsController', () => {
     objective: ObjectiveType.FOCUS,
     mood: MoodType.HAPPY,
     energyLevel: EnergyLevelType.HIGH,
+    predictedVibe: 'FOCUS',
     generatedAt: new Date(),
     tracks: [
       {
@@ -42,36 +48,7 @@ describe('RecommendationsController', () => {
       },
     ],
     totalTracks: 1,
-  };
-
-  const mockAutomaticResponse = {
-    userId: 'user123',
-    playlistId: 'playlist2',
-    playlistName: 'Daily Vibe',
-    objective: ObjectiveType.FOCUS,
-    energyLevel: EnergyLevelType.MEDIUM,
-    generatedAt: new Date(),
-    tracks: [
-      {
-        id: 'track1',
-        title: 'Song 1',
-        artist: 'Artist 1',
-        album: 'Album 1',
-        genre: 'Rock',
-        popularity: 80,
-        features: {
-          energy: 0.5,
-          valence: 0.6,
-          danceability: 0.6,
-          acousticness: 0.2,
-          instrumentalness: 0.1,
-          speechiness: 0.08,
-          tempo: 100,
-        },
-        explanation: 'Daily recommendation',
-      },
-    ],
-    totalTracks: 1,
+    mlModelScore: undefined,
   };
 
   beforeEach(async () => {
@@ -82,7 +59,6 @@ describe('RecommendationsController', () => {
           provide: RecommendationsService,
           useValue: {
             getRecommendations: jest.fn(),
-            generateDailyVibe: jest.fn(),
           },
         },
       ],
@@ -114,20 +90,16 @@ describe('RecommendationsController', () => {
         objective: ObjectiveType.FOCUS,
         mood: MoodType.HAPPY,
         energyLevel: EnergyLevelType.HIGH,
-        limit: 10,
       };
 
-      jest
+      const getRecommendationsMock = jest
         .spyOn(service, 'getRecommendations')
-        .mockResolvedValue(mockRecommendationResponse as any);
+        .mockResolvedValue(mockRecommendationResponse);
 
-      const result = await controller.getRecommendations(mockRequest as any, dto);
+      const result = await controller.getRecommendations(mockRequest, dto);
 
       expect(result).toEqual(mockRecommendationResponse);
-      expect(service.getRecommendations).toHaveBeenCalledWith(
-        'user123',
-        dto,
-      );
+      expect(getRecommendationsMock).toHaveBeenCalledWith('user123', dto);
     });
 
     it('should call service with correct userId from request', async () => {
@@ -137,13 +109,13 @@ describe('RecommendationsController', () => {
         energyLevel: EnergyLevelType.HIGH,
       };
 
-      jest
+      const getRecommendationsMock = jest
         .spyOn(service, 'getRecommendations')
-        .mockResolvedValue(mockRecommendationResponse as any);
+        .mockResolvedValue(mockRecommendationResponse);
 
-      await controller.getRecommendations(mockRequest as any, dto);
+      await controller.getRecommendations(mockRequest, dto);
 
-      expect(service.getRecommendations).toHaveBeenCalledWith(
+      expect(getRecommendationsMock).toHaveBeenCalledWith(
         'user123',
         expect.any(Object),
       );
@@ -160,7 +132,7 @@ describe('RecommendationsController', () => {
       jest.spyOn(service, 'getRecommendations').mockRejectedValue(error);
 
       await expect(
-        controller.getRecommendations(mockRequest as any, dto),
+        controller.getRecommendations(mockRequest, dto),
       ).rejects.toThrow('Service error');
     });
 
@@ -169,62 +141,17 @@ describe('RecommendationsController', () => {
         objective: ObjectiveType.FOCUS,
         mood: MoodType.HAPPY,
         energyLevel: EnergyLevelType.HIGH,
-        limit: 10,
       };
 
       jest
         .spyOn(service, 'getRecommendations')
-        .mockResolvedValue(mockRecommendationResponse as any);
+        .mockResolvedValue(mockRecommendationResponse);
 
-      const result = await controller.getRecommendations(mockRequest as any, dto);
+      const result = await controller.getRecommendations(mockRequest, dto);
 
       expect(result).toHaveProperty('playlistId');
       expect(result).toHaveProperty('tracks');
       expect(result.tracks).toBeInstanceOf(Array);
-    });
-  });
-
-  describe('getDailyVibe', () => {
-    it('should return daily vibe recommendations', async () => {
-      jest
-        .spyOn(service, 'generateDailyVibe')
-        .mockResolvedValue(mockAutomaticResponse as any);
-
-      const result = await controller.getDailyVibe(mockRequest as any);
-
-      expect(result).toEqual(mockAutomaticResponse);
-      expect(service.generateDailyVibe).toHaveBeenCalledWith('user123');
-    });
-
-    it('should handle service errors for daily vibe', async () => {
-      const error = new Error('Daily vibe error');
-      jest.spyOn(service, 'generateDailyVibe').mockRejectedValue(error);
-
-      await expect(
-        controller.getDailyVibe(mockRequest as any),
-      ).rejects.toThrow('Daily vibe error');
-    });
-
-    it('should pass correct userId from request', async () => {
-      jest
-        .spyOn(service, 'generateDailyVibe')
-        .mockResolvedValue(mockAutomaticResponse as any);
-
-      await controller.getDailyVibe(mockRequest as any);
-
-      expect(service.generateDailyVibe).toHaveBeenCalledWith('user123');
-    });
-
-    it('should return daily vibe with correct structure', async () => {
-      jest
-        .spyOn(service, 'generateDailyVibe')
-        .mockResolvedValue(mockAutomaticResponse as any);
-
-      const result = await controller.getDailyVibe(mockRequest as any);
-
-      expect(result).toHaveProperty('playlistId');
-      expect(result).toHaveProperty('tracks');
-      expect(result).toHaveProperty('userId');
     });
   });
 });
