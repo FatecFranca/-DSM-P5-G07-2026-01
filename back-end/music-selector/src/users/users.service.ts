@@ -98,7 +98,7 @@ export class UsersService {
       });
 
       // Construir link de reset (frontend URL)
-      const resetLink = `${process.env.FRONTEND_URL || 'http://localhost:3000'}/reset-password?token=${rawToken}`;
+      const resetLink = `${process.env.FRONTEND_URL || 'http://localhost:2000'}/reset-password?token=${rawToken}`;
 
       // Enviar email
       await this.emailService.sendPasswordResetEmail(email, resetLink);
@@ -146,10 +146,7 @@ export class UsersService {
         throw new BadRequestException('Usuário não encontrado');
       }
 
-      if (user.onboardingDone) {
-        throw new BadRequestException('Onboarding já foi completado');
-      }
-
+    
       // Hash da nova senha
       const passwordHash = await bcrypt.hash(password, 10);
 
@@ -197,33 +194,6 @@ export class UsersService {
   /**
    * RN10-RN13: Completar onboarding
    */
-  async completeOnboarding(
-    userId: string,
-  ) {
-    try {
-      const user = await this.prisma.user.findUnique({
-        where: { id: userId },
-      });
-
-      if (!user) {
-        throw new BadRequestException('Usuário não encontrado');
-      }
-
-      // Atualizar status de onboarding
-      await this.prisma.user.update({
-        where: { id: userId },
-        data: { onboardingDone: true },
-      });
-
-      return {
-        message: 'Onboarding completado com sucesso',
-        userId,
-      };
-    } catch (error: any) {
-  console.error('ERRO ONBOARDING:', error);
-  throw error;
-}
-  }
 
   /**
    * RN26: Atualizar perfil do usuário
