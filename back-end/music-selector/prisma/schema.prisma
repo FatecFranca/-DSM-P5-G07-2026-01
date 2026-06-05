@@ -118,15 +118,15 @@ model PlaylistTrack {
 // ENUMS
 // ─────────────────────────────────────────
 
+enum Objective {
+FOCUS
+WORKOUT
+RELAX
+MOOD_BOOST
 
-
-enum AudioPreference {
- MIXED
- INSTRUMENTAL
- VOCAL
-
-  @@map("audio_preference")
+  @@map("objective")
 }
+
 
 enum EnergyLevel {
   LOW
