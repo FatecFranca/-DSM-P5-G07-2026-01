@@ -12,16 +12,24 @@ import {
 import { router } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { LinearGradient } from 'expo-linear-gradient';
-import { colors, spacing, radius, fontSize } from '@/constants/theme';
+import Svg, { Path, Circle } from 'react-native-svg';
+import { colors } from '@/constants/theme';
+import { MOCK_AUTH, useAuthStore } from '@/store/authStore';
 
 export default function LoginScreen() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
+  const { setUser, setToken } = useAuthStore();
 
   const handleLogin = () => {
-    if (email && password) {
-      // autenticação real entra aqui futuramente
+    const isMockAccount =
+      email.trim().toLowerCase() === MOCK_AUTH.email &&
+      password === MOCK_AUTH.password;
+
+    if (isMockAccount) {
+      setUser(MOCK_AUTH.user);
+      setToken(MOCK_AUTH.token);
       router.replace('/(tabs)');
     }
   };
@@ -38,12 +46,12 @@ export default function LoginScreen() {
           showsVerticalScrollIndicator={false}
         >
 
-          {/* Botão voltar */}
+          {/* Botao voltar */}
           <Pressable
             style={({ pressed }) => [styles.backButton, pressed && styles.pressed]}
             onPress={() => router.back()}
           >
-            <Text style={styles.backArrow}>←</Text>
+            <BackIcon />
           </Pressable>
 
           {/* Header */}
@@ -52,7 +60,7 @@ export default function LoginScreen() {
             <Text style={styles.subtitle}>Entre para acessar suas vibes</Text>
           </View>
 
-          {/* Formulário */}
+          {/* Formulario */}
           <View style={styles.form}>
 
             {/* Email */}
@@ -87,7 +95,7 @@ export default function LoginScreen() {
                   style={styles.eyeButton}
                   onPress={() => setShowPassword(!showPassword)}
                 >
-                  <Text style={styles.eyeText}>{showPassword ? '🙈' : '👁️'}</Text>
+                  <EyeIcon visible={showPassword} />
                 </Pressable>
               </View>
             </View>
@@ -102,7 +110,7 @@ export default function LoginScreen() {
 
           </View>
 
-          {/* Botão entrar */}
+          {/* Botao entrar */}
           <Pressable
             style={({ pressed }) => [styles.btnPrimary, pressed && styles.pressed]}
             onPress={handleLogin}
@@ -123,6 +131,43 @@ export default function LoginScreen() {
   );
 }
 
+function BackIcon() {
+  return (
+    <Svg width={20} height={20} viewBox="0 0 24 24" fill="none">
+      <Path
+        d="M19 12H5M12 19l-7-7 7-7"
+        stroke={colors.textSecondary}
+        strokeWidth={2}
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
+    </Svg>
+  );
+}
+
+function EyeIcon({ visible }: { visible: boolean }) {
+  return (
+    <Svg width={20} height={20} viewBox="0 0 24 24" fill="none">
+      <Path
+        d="M2 12s3.5-6 10-6 10 6 10 6-3.5 6-10 6S2 12 2 12z"
+        stroke={colors.textSecondary}
+        strokeWidth={1.8}
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
+      <Circle cx={12} cy={12} r={3} stroke={colors.textSecondary} strokeWidth={1.8} />
+      {visible && (
+        <Path
+          d="M4 20L20 4"
+          stroke={colors.textSecondary}
+          strokeWidth={2}
+          strokeLinecap="round"
+        />
+      )}
+    </Svg>
+  );
+}
+
 const styles = StyleSheet.create({
   safe: {
     flex: 1,
@@ -133,95 +178,99 @@ const styles = StyleSheet.create({
   },
   scroll: {
     flexGrow: 1,
-    paddingHorizontal: spacing.lg,
-    paddingBottom: spacing.xxl,
+    paddingHorizontal: 24,
+    paddingBottom: 32,
   },
   backButton: {
-    marginTop: spacing.md,
-    marginBottom: spacing.lg,
+    marginTop: 32,
+    marginBottom: 24,
     width: 40,
     height: 40,
     justifyContent: 'center',
   },
-  backArrow: {
-    fontSize: 24,
-    color: colors.textSecondary,
-  },
   header: {
-    marginBottom: spacing.xl,
+    marginBottom: 32,
   },
   title: {
-    fontSize: fontSize.xl,
-    fontWeight: '700',
+    fontFamily: 'Inter_700Bold',
+    fontSize: 32,
+    lineHeight: 40,
     color: colors.textPrimary,
-    marginBottom: spacing.xs,
+    marginBottom: 8,
   },
   subtitle: {
-    fontSize: fontSize.md,
+    fontFamily: 'Inter_400Regular',
+    fontSize: 17,
+    lineHeight: 25,
     color: colors.textSecondary,
   },
   form: {
-    gap: spacing.md,
-    marginBottom: spacing.lg,
+    gap: 16,
+    marginBottom: 24,
   },
   fieldGroup: {
-    gap: spacing.xs,
+    gap: 6,
   },
   label: {
-    fontSize: fontSize.sm,
-    fontWeight: '500',
+    fontFamily: 'Inter_500Medium',
+    fontSize: 15,
+    lineHeight: 22,
     color: colors.textSecondary,
   },
   input: {
     backgroundColor: colors.surface,
-    borderRadius: radius.md,
-    paddingHorizontal: spacing.md,
-    paddingVertical: spacing.md,
+    borderRadius: 12,
+    height: 50,
+    paddingHorizontal: 16,
     color: colors.textPrimary,
-    fontSize: fontSize.md,
+    fontFamily: 'Inter_400Regular',
+    fontSize: 17,
     borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.08)',
+    borderColor: 'rgba(167,176,192,0.18)',
   },
   inputWrapper: {
     position: 'relative',
   },
   inputWithAction: {
-    paddingRight: spacing.xxl + spacing.md,
+    paddingRight: 52,
   },
   eyeButton: {
     position: 'absolute',
-    right: spacing.md,
+    right: 16,
     top: 0,
     bottom: 0,
     justifyContent: 'center',
-  },
-  eyeText: {
-    fontSize: 16,
+    alignItems: 'center',
+    width: 28,
   },
   forgotButton: {
     alignSelf: 'flex-end',
-    marginTop: spacing.xs,
+    marginTop: 1,
+    marginBottom: 4,
   },
   forgotText: {
-    fontSize: fontSize.sm,
+    fontFamily: 'Inter_500Medium',
+    fontSize: 15,
+    lineHeight: 22,
     color: colors.primary,
-    fontWeight: '500',
   },
   btnPrimary: {
     width: '100%',
-    borderRadius: radius.md,
+    borderRadius: 999,
     overflow: 'hidden',
     marginTop: 'auto',
+    marginBottom: 24,
   },
   btnGradient: {
-    paddingVertical: spacing.md,
+    height: 56,
     alignItems: 'center',
-    borderRadius: radius.md,
+    justifyContent: 'center',
+    borderRadius: 999,
   },
   btnText: {
     color: colors.textPrimary,
-    fontSize: fontSize.md,
-    fontWeight: '700',
+    fontFamily: 'Inter_700Bold',
+    fontSize: 17,
   },
   pressed: {
     opacity: 0.8,

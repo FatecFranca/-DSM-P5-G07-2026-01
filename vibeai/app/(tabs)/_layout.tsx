@@ -1,87 +1,147 @@
-import { Tabs } from 'expo-router';
-import { colors, fontSize } from '@/constants/theme';
-import { Text, View, StyleSheet } from 'react-native';
+import { Tabs, router } from 'expo-router';
+import { ColorValue, Pressable, StyleSheet, Text, View } from 'react-native';
+import Svg, { Path, Circle } from 'react-native-svg';
+import { colors } from '@/constants/theme';
 
-function TabIcon({ emoji, label, focused }: { emoji: string; label: string; focused: boolean }) {
+type IconName = 'home' | 'plus' | 'library' | 'profile';
+type TabRoute = {
+  key: string;
+  name: string;
+  params?: object;
+};
+type CustomTabBarProps = {
+  state: {
+    index: number;
+    routes: TabRoute[];
+  };
+};
+
+const TABS = [
+  { routeName: 'index', href: '/(tabs)', label: 'Home', icon: 'home' },
+  { routeName: 'create-vibe', href: '/(tabs)/create-vibe', label: 'Criar Vibe', icon: 'plus' },
+  { routeName: 'library', href: '/(tabs)/library', label: 'Biblioteca', icon: 'library' },
+  { routeName: 'profile', href: '/(tabs)/profile', label: 'Perfil', icon: 'profile' },
+] as const;
+
+function CustomTabBar({ state }: CustomTabBarProps) {
+  const currentRouteName = state.routes[state.index]?.name;
+
   return (
-    <View style={tabStyles.wrapper}>
-      <Text style={tabStyles.emoji}>{emoji}</Text>
-      <Text style={[tabStyles.label, focused && tabStyles.labelFocused]}>
-        {label}
-      </Text>
+    <View style={styles.tabBar}>
+      {TABS.map((tab) => {
+        const focused =
+          currentRouteName === tab.routeName ||
+          currentRouteName?.startsWith(`${tab.routeName}/`);
+        const color = focused ? colors.primary : colors.textSecondary;
+
+        const onPress = () => {
+          if (!focused) router.replace(tab.href as any);
+        };
+
+        return (
+          <Pressable
+            key={tab.routeName}
+            accessibilityRole="button"
+            accessibilityState={focused ? { selected: true } : {}}
+            onPress={onPress}
+            style={({ pressed }) => [
+              styles.tabItem,
+              pressed && styles.pressed,
+            ]}
+          >
+            <TabSvgIcon name={tab.icon} color={color} />
+            <Text style={[styles.tabLabel, focused && styles.tabLabelFocused]}>
+              {tab.label}
+            </Text>
+          </Pressable>
+        );
+      })}
     </View>
   );
 }
 
-const tabStyles = StyleSheet.create({
-  wrapper: {
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: 2,
-    paddingTop: 4,
-  },
-  emoji: {
-    fontSize: 20,
-  },
-  label: {
-    fontSize: 10,
-    fontWeight: '500',
-    color: colors.textSecondary,
-  },
-  labelFocused: {
-    color: colors.primary,
-    fontWeight: '700',
-  },
-});
+function TabSvgIcon({ name, color }: { name: IconName; color: ColorValue }) {
+  if (name === 'home') {
+    return (
+      <Svg width={24} height={24} viewBox="0 0 24 24" fill="none">
+        <Path d="M3 10.5L12 3l9 7.5" stroke={color} strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" />
+        <Path d="M5 10v10h14V10" stroke={color} strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" />
+        <Path d="M9 20v-6h6v6" stroke={color} strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" />
+      </Svg>
+    );
+  }
+
+  if (name === 'plus') {
+    return (
+      <Svg width={24} height={24} viewBox="0 0 24 24" fill="none">
+        <Circle cx={12} cy={12} r={9} stroke={color} strokeWidth={2} />
+        <Path d="M12 8v8M8 12h8" stroke={color} strokeWidth={2} strokeLinecap="round" />
+      </Svg>
+    );
+  }
+
+  if (name === 'library') {
+    return (
+      <Svg width={24} height={24} viewBox="0 0 24 24" fill="none">
+        <Path d="M6 5v14M12 5v14M18 8v11" stroke={color} strokeWidth={2} strokeLinecap="round" />
+      </Svg>
+    );
+  }
+
+  return (
+    <Svg width={24} height={24} viewBox="0 0 24 24" fill="none">
+      <Circle cx={12} cy={8} r={4} stroke={color} strokeWidth={2} />
+      <Path d="M4 21c1.2-4 4-6 8-6s6.8 2 8 6" stroke={color} strokeWidth={2} strokeLinecap="round" />
+    </Svg>
+  );
+}
 
 export default function TabsLayout() {
   return (
     <Tabs
+      tabBar={(props) => <CustomTabBar {...props} />}
       screenOptions={{
         headerShown: false,
-        tabBarStyle: {
-          backgroundColor: colors.surface,
-          borderTopColor: 'rgba(255,255,255,0.08)',
-          borderTopWidth: 1,
-          height: 64,
-          paddingBottom: 8,
-          paddingTop: 4,
-        },
-        tabBarShowLabel: false,
       }}
     >
-      <Tabs.Screen
-        name="index"
-        options={{
-          tabBarIcon: ({ focused }) => (
-            <TabIcon emoji="🏠" label="Home" focused={focused} />
-          ),
-        }}
-      />
-      <Tabs.Screen
-        name="create-vibe"
-        options={{
-          tabBarIcon: ({ focused }) => (
-            <TabIcon emoji="✨" label="Criar Vibe" focused={focused} />
-          ),
-        }}
-      />
-      <Tabs.Screen
-        name="library"
-        options={{
-          tabBarIcon: ({ focused }) => (
-            <TabIcon emoji="🎵" label="Biblioteca" focused={focused} />
-          ),
-        }}
-      />
-      <Tabs.Screen
-        name="profile"
-        options={{
-          tabBarIcon: ({ focused }) => (
-            <TabIcon emoji="👤" label="Perfil" focused={focused} />
-          ),
-        }}
-      />
+      <Tabs.Screen name="index" />
+      <Tabs.Screen name="create-vibe" />
+      <Tabs.Screen name="library" />
+      <Tabs.Screen name="profile" />
     </Tabs>
   );
 }
+
+const styles = StyleSheet.create({
+  tabBar: {
+    height: 76,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    backgroundColor: colors.surface,
+    borderTopWidth: 1,
+    borderTopColor: 'rgba(255,255,255,0.08)',
+    paddingTop: 8,
+    paddingBottom: 10,
+  },
+  tabItem: {
+    width: '25%',
+    height: '100%',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 3,
+  },
+  tabLabel: {
+    fontFamily: 'Inter_500Medium',
+    fontSize: 11,
+    lineHeight: 13,
+    color: colors.textSecondary,
+  },
+  tabLabelFocused: {
+    fontFamily: 'Inter_700Bold',
+    color: colors.primary,
+  },
+  pressed: {
+    opacity: 0.75,
+  },
+});
