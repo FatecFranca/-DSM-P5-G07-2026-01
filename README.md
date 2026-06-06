@@ -16,20 +16,12 @@ Desenvolvimento de um **sistema de recomendação musical hiperpersonalizado** u
 - Cadastro enxuto (Nome, Data de Nascimento, E-mail, Senha)
 - Recuperação de acesso via "Esqueci minha senha"
 
-### 2. **Onboarding Inteligente**
-- Wizard inicial com questionário de 3 passos (gêneros, estilo de escuta, preferência vocal/instrumental)
-- Mitigação de Cold Start com alimentação inicial de dados
-- Captura de atributos musicais para o ML: danceability, energy, valence, acousticness, instrumentalness, speechiness
 
-### 3. **Motor de Recomendação Híbrido** *(Core)*
+
+### 2. **Motor de Recomendação Híbrido** *(Core)*
 - **Vibes Diárias**: Playlists automáticas adaptadas ao perfil (Foco, Treino, Relaxamento)
 - **Criar Minha Vibe**: Gerador sob demanda baseado em Atividade, Energia e Humor
 
-### 4. **Interatividade e Transparência**
-- Sistema de Like/Dislike para refinamento contínuo
-- Explicabilidade algorítmica com gráficos e justificativas (Energy, Valence, Danceability)
-
----
 
 ## 💻 Stack de Tecnologias
 
