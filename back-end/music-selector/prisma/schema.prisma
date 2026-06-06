@@ -20,7 +20,6 @@ model User {
   email          String   @unique @db.VarChar(100)
   birthDate      DateTime @map("birth_date") @db.Date
   passwordHash   String   @map("password_hash")
-  onboardingDone Boolean  @default(false) @map("onboarding_done")
   createdAt      DateTime @default(now()) @map("created_at")
   updatedAt      DateTime @updatedAt @map("updated_at")
 
@@ -118,15 +117,15 @@ model PlaylistTrack {
 // ENUMS
 // ─────────────────────────────────────────
 
+enum Objective {
+FOCUS
+WORKOUT
+RELAX
+MOOD_BOOST
 
-
-enum AudioPreference {
- MIXED
- INSTRUMENTAL
- VOCAL
-
-  @@map("audio_preference")
+  @@map("objective")
 }
+
 
 enum EnergyLevel {
   LOW

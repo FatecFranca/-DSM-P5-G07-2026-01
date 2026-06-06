@@ -1,5 +1,7 @@
 """
 Como executar:
+
+    python -m uvicorn scripts.api_vibe:app --reload
     uvicorn scripts.api_vibe:app --reload
 
 Ou, se estiver dentro da pasta scripts:

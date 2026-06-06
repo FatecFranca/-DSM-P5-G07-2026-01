@@ -17,7 +17,7 @@ export class AuthService {
   async signIn(
     email: string,
     password: string,
-  ): Promise<{ access_token: string; user: { id: string; name: string; email: string; onboardingDone: boolean } }> {
+  ): Promise<{ access_token: string; user: { id: string; name: string; email: string} }> {
     const user = await this.usersService.findByEmail(email);
     
     if (!user) {
@@ -38,7 +38,7 @@ export class AuthService {
         id: (user as any).id,
         name: (user as any).name,
         email: (user as any).email,
-        onboardingDone: (user as any).onboardingDone,
+        
       },
     };
   }

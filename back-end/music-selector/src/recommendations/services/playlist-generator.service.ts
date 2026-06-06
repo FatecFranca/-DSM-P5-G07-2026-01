@@ -9,12 +9,17 @@ import {
 } from '../dto/get-recommendations.dto';
 import { MLService } from './ml.service';
 import { PlaylistService } from './playlist.service';
-import { mapAnswersToMlFeatures } from './map-answers-to-ml-features';
+import {
+  mapAnswersToMlFeatures,
+  type MlFeatures,
+} from './map-answers-to-ml-features';
 
 @Injectable()
 export class PlaylistGeneratorService {
   private readonly logger = new Logger(PlaylistGeneratorService.name);
   private readonly targetCount = 10;
+  private readonly candidatePoolSize = 60;
+  private readonly randomizedPoolSize = 30;
 
   constructor(
     private prisma: PrismaService,
@@ -55,7 +60,7 @@ export class PlaylistGeneratorService {
       orderBy: {
         popularity: 'desc',
       },
-      take: this.targetCount,
+      take: this.candidatePoolSize,
     });
 
     if (tracks.length < this.targetCount) {
@@ -64,7 +69,8 @@ export class PlaylistGeneratorService {
       );
     }
 
-    const enrichedTracks = this.enrichTracks(tracks);
+    const selectedTracks = this.selectTracksByFeatureMatch(tracks, mlFeatures);
+    const enrichedTracks = this.enrichTracks(selectedTracks);
 
     return this.createPlaylistResponse(
       userId,
@@ -134,6 +140,61 @@ export class PlaylistGeneratorService {
         tempo: track.tempo,
       },
     }));
+  }
+
+  private selectTracksByFeatureMatch(
+    tracks: TrackModel[],
+    mlFeatures: MlFeatures,
+  ) {
+    const topMatchedTracks = tracks
+      .map((track) => ({
+        track,
+        score: this.calculateFeatureDistance(track, mlFeatures),
+      }))
+      .sort((a, b) => a.score - b.score)
+      .slice(0, Math.min(this.randomizedPoolSize, tracks.length))
+      .map(({ track }) => track);
+
+    return this.shuffleTracks(topMatchedTracks).slice(0, this.targetCount);
+  }
+
+  private calculateFeatureDistance(
+    track: TrackModel,
+    mlFeatures: MlFeatures,
+  ): number {
+    const normalizedTrackTempo = this.normalizeTempo(track.tempo);
+    const normalizedMlTempo = this.normalizeTempo(mlFeatures.tempo);
+
+    return (
+      Math.abs(track.danceability - mlFeatures.danceability) +
+      Math.abs(track.energy - mlFeatures.energy) +
+      Math.abs(track.valence - mlFeatures.valence) +
+      Math.abs(track.acousticness - mlFeatures.acousticness) +
+      Math.abs(track.instrumentalness - mlFeatures.instrumentalness) +
+      Math.abs(track.speechiness - mlFeatures.speechiness) +
+      Math.abs(normalizedTrackTempo - normalizedMlTempo)
+    );
+  }
+
+  private normalizeTempo(tempo: number): number {
+    const minTempo = 40;
+    const maxTempo = 220;
+
+    return Math.max(0, Math.min(1, (tempo - minTempo) / (maxTempo - minTempo)));
+  }
+
+  private shuffleTracks(tracks: TrackModel[]) {
+    const shuffledTracks = [...tracks];
+
+    for (let index = shuffledTracks.length - 1; index > 0; index--) {
+      const randomIndex = Math.floor(Math.random() * (index + 1));
+      [shuffledTracks[index], shuffledTracks[randomIndex]] = [
+        shuffledTracks[randomIndex],
+        shuffledTracks[index],
+      ];
+    }
+
+    return shuffledTracks;
   }
 
   private generateObjectivePlaylistName(

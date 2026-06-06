@@ -1,17 +1,15 @@
 {
   "compilerOptions": {
-    "types": ["node", "jest"],
-    "module": "nodenext",
-    "lib": ["ES2020"],
-    "moduleResolution": "nodenext",
+    "module": "commonjs",
     "declaration": true,
     "removeComments": true,
     "emitDecoratorMetadata": true,
     "experimentalDecorators": true,
     "allowSyntheticDefaultImports": true,
+    "target": "ES2021",
     "sourceMap": true,
     "outDir": "./dist",
-    "paths": { "./": ["./src"] },
+    
     "incremental": true,
     "skipLibCheck": true,
     "strictNullChecks": true,
@@ -20,9 +18,6 @@
     "strictBindCallApply": false,
     "noFallthroughCasesInSwitch": false,
     "esModuleInterop": true,
-    "resolveJsonModule": true,
-    "isolatedModules": true
-
+    "resolveJsonModule": true
   }
 }
-

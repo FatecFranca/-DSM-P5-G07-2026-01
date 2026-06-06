@@ -8,11 +8,6 @@ export enum ObjectiveType {
   MOOD_BOOST = 'MOOD_BOOST',
 }
 
-export enum AudioPreference {
-  INSTRUMENTAL = 'INSTRUMENTAL',
-  VOCAL = 'VOCAL',
-  MIXED = 'MIXED',
-}
 
 export enum MoodType {
   HAPPY = 'HAPPY',
