@@ -160,8 +160,7 @@ npm run start:prod
 
 1. **Autenticação**: Usuário realiza cadastro/login via app mobile
 2. **Recomendação**: Sistema gera playlists automáticas ou sob demanda
-3. **Feedback**: Usuário interage com Like/Dislike para refinar as recomendações
-4. **Explicabilidade**: App exibe análise das características musicais sugeridas
+3. **Explicabilidade**: App exibe análise das características musicais sugeridas
 
 ---
 
