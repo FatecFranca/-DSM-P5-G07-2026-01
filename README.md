@@ -159,10 +159,9 @@ npm run start:prod
 ## 🔄 Fluxo do Sistema
 
 1. **Autenticação**: Usuário realiza cadastro/login via app mobile
-2. **Onboarding**: Preenchimento de perfil inicial com preferências musicais
-3. **Recomendação**: Sistema gera playlists automáticas ou sob demanda
-4. **Feedback**: Usuário interage com Like/Dislike para refinar as recomendações
-5. **Explicabilidade**: App exibe análise das características musicais sugeridas
+2. **Recomendação**: Sistema gera playlists automáticas ou sob demanda
+3. **Feedback**: Usuário interage com Like/Dislike para refinar as recomendações
+4. **Explicabilidade**: App exibe análise das características musicais sugeridas
 
 ---
 
