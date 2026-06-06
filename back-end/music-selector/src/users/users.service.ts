@@ -191,10 +191,7 @@ export class UsersService {
     }
   }
 
-  /**
-   * RN10-RN13: Completar onboarding
-   */
-
+ 
   /**
    * RN26: Atualizar perfil do usuário
    * Apenas nome e senha são editáveis
@@ -272,7 +269,7 @@ export class UsersService {
           name: 'Deleted User',
           email: anonymizedEmail,
           passwordHash: anonymizedPassword,
-          onboardingDone: false,
+          
         },
       });
 
@@ -303,7 +300,7 @@ export class UsersService {
         name: true,
         email: true,
         passwordHash: true,
-        onboardingDone: true,
+        
       },
     });
   }
@@ -319,7 +316,7 @@ export class UsersService {
         name: true,
         email: true,
         passwordHash: true,
-        onboardingDone: true,
+        
       },
     });
   }
@@ -335,7 +332,6 @@ export class UsersService {
         id: true,
         name: true,
         email: true,
-        onboardingDone: true,
         createdAt: true,
       },
     });
