@@ -1,11 +1,6 @@
 import { Injectable, Logger } from '@nestjs/common';
 import * as nodemailer from 'nodemailer';
 
-/**
- * RN08: Serviço de email para notificações
- * Implementado com Nodemailer para SMTP
- * Suporta variáveis de ambiente para configuração
- */
 @Injectable()
 export class EmailService {
   private readonly logger = new Logger(EmailService.name);
@@ -15,7 +10,7 @@ export class EmailService {
     this.transporter = nodemailer.createTransport({
       host: process.env.EMAIL_HOST || 'localhost',
       port: parseInt(process.env.EMAIL_PORT || '587', 10),
-      secure: process.env.EMAIL_PORT === '465', // true para porta 465, false para outras portas
+      secure: process.env.EMAIL_PORT === '465',
       auth: process.env.EMAIL_USER
         ? {
             user: process.env.EMAIL_USER,
@@ -24,36 +19,26 @@ export class EmailService {
         : undefined,
     });
 
-    // Verificar conexão do transporter
     this.verifyConnection();
   }
 
-  /**
-   * Verificar se a conexão SMTP está funcionando
-   */
   private async verifyConnection(): Promise<void> {
     try {
       await this.transporter.verify();
-      this.logger.log('✅ Conexão SMTP verificada com sucesso');
-    } catch (error) {
+      this.logger.log('Conexão SMTP verificada com sucesso');
+    } catch {
       this.logger.warn(
-        '⚠️ Aviso: Não foi possível verificar a conexão SMTP. ' +
-          'Verifique as variáveis de ambiente EMAIL_HOST, EMAIL_PORT, EMAIL_USER e EMAIL_PASSWORD',
+        'Não foi possível verificar a conexão SMTP. Verifique EMAIL_HOST, EMAIL_PORT, EMAIL_USER e EMAIL_PASSWORD.',
       );
     }
   }
 
-  /**
-   * Enviar email de reset de senha
-   * @param email Destinatário
-   * @param resetLink Link com token para reset
-   */
-  async sendPasswordResetEmail(email: string, resetLink: string): Promise<void> {
+  async sendPasswordResetEmail(email: string, resetCode: string): Promise<void> {
     try {
       const mailOptions = {
-        from: process.env.EMAIL_FROM || 'noreply@musicselector.com',
+        from: process.env.EMAIL_FROM || 'noreply@vibeai.com',
         to: email,
-        subject: 'Resetar sua Senha - Music Selector 🎵',
+        subject: 'Redefinir sua senha - VibeAI',
         html: `
           <!DOCTYPE html>
           <html lang="pt-BR">
@@ -62,67 +47,64 @@ export class EmailService {
             <style>
               body {
                 font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-                background-color: #f5f5f5;
+                background-color: #0B0F1A;
                 margin: 0;
                 padding: 0;
               }
               .container {
                 max-width: 600px;
                 margin: 20px auto;
-                background: white;
+                background: #121A2A;
                 padding: 40px;
-                border-radius: 8px;
-                box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+                border-radius: 18px;
+                color: #FFFFFF;
               }
               .header {
                 text-align: center;
-                border-bottom: 3px solid #1DB954;
+                border-bottom: 3px solid #7C3AED;
                 padding-bottom: 20px;
                 margin-bottom: 30px;
               }
               .header h1 {
-                color: #1DB954;
+                color: #FFFFFF;
                 margin: 0;
-                font-size: 28px;
+                font-size: 30px;
               }
               h2 {
-                color: #333;
-                font-size: 20px;
+                color: #FFFFFF;
+                font-size: 22px;
                 margin-top: 0;
               }
               p {
-                color: #666;
+                color: #A7B0C0;
                 line-height: 1.6;
                 font-size: 16px;
               }
-              .button {
+              .code {
                 display: inline-block;
-                padding: 14px 32px;
-                background: #1DB954;
-                color: white;
-                text-decoration: none;
-                border-radius: 4px;
-                margin: 20px 0;
-                font-weight: bold;
-                transition: background 0.3s;
-              }
-              .button:hover {
-                background: #1ed760;
+                padding: 16px 28px;
+                background: linear-gradient(90deg, #7C3AED, #22D3EE);
+                color: #FFFFFF;
+                border-radius: 14px;
+                letter-spacing: 8px;
+                font-size: 32px;
+                font-weight: 800;
+                margin: 18px 0;
               }
               .warning {
-                background-color: #fff3cd;
-                border-left: 4px solid #ffc107;
+                background-color: rgba(245, 158, 11, 0.12);
+                border-left: 4px solid #F59E0B;
                 padding: 15px;
                 margin: 20px 0;
-                border-radius: 4px;
-                color: #856404;
+                border-radius: 8px;
+                color: #FDE68A;
               }
               .footer {
-                border-top: 1px solid #eee;
+                border-top: 1px solid rgba(255,255,255,0.10);
                 margin-top: 30px;
                 padding-top: 20px;
                 font-size: 12px;
-                color: #999;
+                color: #A7B0C0;
                 text-align: center;
               }
             </style>
@@ -130,53 +112,47 @@ export class EmailService {
           <body>
             <div class="container">
               <div class="header">
-                <h1>🎵 Music Selector</h1>
+                <h1>VibeAI</h1>
               </div>
-              
-              <h2>Resetar sua Senha</h2>
-              <p>Você solicitou um reset de senha. Clique no botão abaixo para continuar:</p>
-              
+
+              <h2>Redefinir sua senha</h2>
+              <p>Você solicitou a redefinição da sua senha. Use o código abaixo no app VibeAI:</p>
+
               <center>
-                <a href="${resetLink}" class="button">Resetar Senha</a>
+                <div class="code">${resetCode}</div>
               </center>
-              
+
               <div class="warning">
-                <strong>⏰ Atenção:</strong> Este link expira em 1 hora. Se você não solicitou um reset de senha, ignore este email ou entre em contato com o suporte.
+                <strong>Atenção:</strong> este código expira em 1 hora. Se você não solicitou uma redefinição de senha, ignore este email.
               </div>
-              
-              <p>Ou copie e cole este link no seu navegador:</p>
-              <p style="word-break: break-all; background: #f9f9f9; padding: 10px; border-radius: 4px; color: #666; font-size: 14px;">
-                ${resetLink}
-              </p>
-              
+
+              <p>Digite esse código no campo de recuperação de senha do aplicativo e cadastre sua nova senha.</p>
+
               <div class="footer">
-                <p>© 2026 Music Selector - Sistema de Recomendação Musical</p>
-                <p>Se você não realizou essa ação, por favor ignore este email.</p>
+                <p>© 2026 VibeAI - Sistema de Recomendação Musical</p>
+                <p>Este é um email automático. Por favor, não responda.</p>
               </div>
             </div>
           </body>
           </html>
         `,
-        text: `Resetar Senha\n\nVocê solicitou um reset de senha. Visite este link para continuar:\n${resetLink}\n\nEste link expira em 1 hora.`,
+        text: `Redefinir senha - VibeAI\n\nVocê solicitou a redefinição da sua senha.\n\nCódigo: ${resetCode}\n\nEste código expira em 1 hora.`,
       };
 
       await this.transporter.sendMail(mailOptions);
-      this.logger.log(`✅ Email de reset enviado para: ${email}`);
+      this.logger.log(`Email de reset enviado para: ${email}`);
     } catch (error) {
-      this.logger.error(`❌ Erro ao enviar email de reset para ${email}:`, error);
+      this.logger.error(`Erro ao enviar email de reset para ${email}:`, error);
       throw error;
     }
   }
 
-  /**
-   * Enviar email de confirmação após reset bem-sucedido
-   */
   async sendPasswordResetConfirmation(email: string): Promise<void> {
     try {
       const mailOptions = {
-        from: process.env.EMAIL_FROM || 'noreply@musicselector.com',
+        from: process.env.EMAIL_FROM || 'noreply@vibeai.com',
         to: email,
-        subject: 'Senha Alterada com Sucesso - Music Selector 🎵',
+        subject: 'Senha alterada com sucesso - VibeAI',
         html: `
           <!DOCTYPE html>
           <html lang="pt-BR">
@@ -185,60 +161,56 @@ export class EmailService {
             <style>
               body {
                 font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-                background-color: #f5f5f5;
+                background-color: #0B0F1A;
                 margin: 0;
                 padding: 0;
               }
               .container {
                 max-width: 600px;
                 margin: 20px auto;
-                background: white;
+                background: #121A2A;
                 padding: 40px;
-                border-radius: 8px;
-                box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+                border-radius: 18px;
+                color: #FFFFFF;
               }
               .header {
                 text-align: center;
-                border-bottom: 3px solid #1DB954;
+                border-bottom: 3px solid #7C3AED;
                 padding-bottom: 20px;
                 margin-bottom: 30px;
               }
               .header h1 {
-                color: #1DB954;
+                color: #FFFFFF;
                 margin: 0;
-                font-size: 28px;
+                font-size: 30px;
               }
               .success-box {
-                background: #d4edda;
-                border: 2px solid #28a745;
-                border-radius: 4px;
+                background: rgba(34, 197, 94, 0.14);
+                border: 2px solid #22C55E;
+                border-radius: 12px;
                 padding: 20px;
                 margin: 20px 0;
                 text-align: center;
               }
               .success-box h2 {
-                color: #28a745;
-                margin-top: 0;
-              }
-              h2 {
-                color: #333;
-                font-size: 20px;
+                color: #FFFFFF;
+                margin: 0;
               }
               p {
-                color: #666;
+                color: #A7B0C0;
                 line-height: 1.6;
                 font-size: 16px;
               }
               .highlight {
-                color: #1DB954;
+                color: #22D3EE;
                 font-weight: bold;
               }
               .footer {
-                border-top: 1px solid #eee;
+                border-top: 1px solid rgba(255,255,255,0.10);
                 margin-top: 30px;
                 padding-top: 20px;
                 font-size: 12px;
-                color: #999;
+                color: #A7B0C0;
                 text-align: center;
               }
             </style>
@@ -246,23 +218,19 @@ export class EmailService {
           <body>
             <div class="container">
               <div class="header">
-                <h1>🎵 Music Selector</h1>
+                <h1>VibeAI</h1>
               </div>
-              
+
               <div class="success-box">
-                <h2>✅ Senha Alterada com Sucesso!</h2>
+                <h2>Senha alterada com sucesso!</h2>
               </div>
-              
-              <p>Sua senha foi resetada com sucesso. Agora você pode fazer login com sua nova senha.</p>
-              
-              <p class="highlight">🎵 Bem-vindo de volta ao Music Selector!</p>
-              
-              <p><strong>Dica:</strong> Guarde sua nova senha em um local seguro. Nós nunca pediremos sua senha por email.</p>
-              
-              <p><strong>⚠️ Segurança:</strong> Se você não realizou essa ação, entre em contato com o suporte imediatamente para investigar possível acesso não autorizado.</p>
-              
+
+              <p>Sua senha foi redefinida com sucesso. Agora você pode fazer login com sua nova senha.</p>
+              <p class="highlight">Bem-vindo de volta ao VibeAI.</p>
+              <p><strong>Segurança:</strong> se você não realizou essa ação, entre em contato com o suporte imediatamente.</p>
+
               <div class="footer">
-                <p>© 2026 Music Selector - Sistema de Recomendação Musical</p>
+                <p>© 2026 VibeAI - Sistema de Recomendação Musical</p>
                 <p>Este é um email automático. Por favor, não responda.</p>
               </div>
             </div>
@@ -273,12 +241,9 @@ export class EmailService {
       };
 
       await this.transporter.sendMail(mailOptions);
-      this.logger.log(`✅ Email de confirmação enviado para: ${email}`);
+      this.logger.log(`Email de confirmação enviado para: ${email}`);
     } catch (error) {
-      this.logger.error(
-        `❌ Erro ao enviar email de confirmação para ${email}:`,
-        error,
-      );
+      this.logger.error(`Erro ao enviar email de confirmação para ${email}:`, error);
       throw error;
     }
   }

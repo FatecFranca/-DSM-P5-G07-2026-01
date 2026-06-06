@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useRef, useState } from 'react';
+﻿import { useCallback, useEffect, useRef, useState } from 'react';
 import {
   Animated,
   View,
@@ -13,6 +13,8 @@ import { LinearGradient } from 'expo-linear-gradient';
 import Svg, { Path, Circle } from 'react-native-svg';
 import { colors } from '@/constants/theme';
 import { useVibeStore } from '@/store/vibeStore';
+import { useAuthStore } from '@/store/authStore';
+import { EnergyLevelType, MoodType, ObjectiveType } from '@/types';
 
 type ObjectiveIconName = 'focus' | 'energy' | 'calm' | 'mood';
 
@@ -37,7 +39,8 @@ const ENERGY_LEVELS = [
 ];
 
 export default function CreateVibeScreen() {
-  const { setVibeRequest, addSavedVibe } = useVibeStore();
+  const { token } = useAuthStore();
+  const { setVibeRequest, generatePlaylist, error } = useVibeStore();
   const [step, setStep] = useState(1);
   const [objective, setObjective] = useState('');
   const [energy, setEnergy] = useState('');
@@ -85,18 +88,31 @@ export default function CreateVibeScreen() {
     return false;
   };
 
-  const handleGenerate = () => {
+  const handleGenerate = async () => {
+    if (!token) {
+      router.replace('/(auth)/login');
+      return;
+    }
+
+    const request = {
+      objective: toBackendObjective(objective),
+      energyLevel: toBackendEnergy(energy),
+      mood: toBackendMood(mood),
+    };
+
     setGenerating(true);
-    setVibeRequest({ objective, energyLevel: energy, mood });
-    setTimeout(() => {
-      const vibe = createSavedVibe(objective, energy, mood);
-      addSavedVibe(vibe);
+    setVibeRequest(request);
+
+    try {
+      const playlist = await generatePlaylist(token, request);
       resetForm();
       router.push({
         pathname: '/vibe/[id]',
-        params: { id: vibe.id, fromGenerated: '1' },
+        params: { id: playlist.id, fromGenerated: '1' },
       });
-    }, 2000);
+    } catch {
+      setGenerating(false);
+    }
   };
 
   const handleNext = () => {
@@ -280,59 +296,33 @@ export default function CreateVibeScreen() {
   );
 }
 
-function createSavedVibe(objective: string, energy: string, mood: string) {
-  const objectiveMap: Record<string, { title: string; desc: string; image: string; gradientColors: readonly [string, string] }> = {
-    focus: {
-      title: 'Vibe de Foco',
-      desc: 'Musicas para concentrar',
-      image: 'https://images.unsplash.com/photo-1529421308418-eab98863cee4?w=900&q=85',
-      gradientColors: ['#7C3AED', '#4338CA'],
-    },
-    workout: {
-      title: 'Vibe de Energia',
-      desc: 'Faixas para impulsionar seu ritmo',
-      image: 'https://images.unsplash.com/photo-1526506118085-60ce8714f8c5?w=900&q=85',
-      gradientColors: ['#F472B6', '#BE185D'],
-    },
-    relax: {
-      title: 'Vibe para Acalmar',
-      desc: 'Sons para respirar melhor',
-      image: 'https://images.unsplash.com/photo-1573603088895-d399fbee9653?w=900&q=85',
-      gradientColors: ['#22D3EE', '#0369A1'],
-    },
-    mood: {
-      title: 'Vibe de Humor',
-      desc: 'Selecionada para o seu momento',
-      image: 'https://images.unsplash.com/photo-1511379938547-c1f69419868d?w=900&q=85',
-      gradientColors: ['#7C3AED', '#22D3EE'],
-    },
+function toBackendObjective(value: string): ObjectiveType {
+  const map: Record<string, ObjectiveType> = {
+    focus: 'FOCUS',
+    workout: 'WORKOUT',
+    relax: 'RELAX',
+    mood: 'MOOD_BOOST',
   };
+  return map[value] ?? 'MOOD_BOOST';
+}
 
-  const energyMap: Record<string, string> = {
-    low: 'Baixa',
-    medium: 'Média',
-    high: 'Alta',
+function toBackendMood(value: string): MoodType {
+  const map: Record<string, MoodType> = {
+    happy: 'HAPPY',
+    neutral: 'NEUTRAL',
+    anxious: 'ANXIOUS',
+    sad: 'SAD',
   };
+  return map[value] ?? 'NEUTRAL';
+}
 
-  const moodMap: Record<string, string> = {
-    happy: 'Animado',
-    neutral: 'Neutro',
-    anxious: 'Tenso',
-    sad: 'Melancólico',
+function toBackendEnergy(value: string): EnergyLevelType {
+  const map: Record<string, EnergyLevelType> = {
+    low: 'LOW',
+    medium: 'MEDIUM',
+    high: 'HIGH',
   };
-
-  const base = objectiveMap[objective] ?? objectiveMap.mood;
-
-  return {
-    id: `generated-${Date.now()}`,
-    title: base.title,
-    desc: base.desc,
-    energy: energyMap[energy] ?? 'Média',
-    mood: moodMap[mood] ?? 'Neutro',
-    gradientColors: base.gradientColors,
-    image: base.image,
-    createdAt: new Date().toISOString(),
-  };
+  return map[value] ?? 'MEDIUM';
 }
 
 function ObjectiveIcon({ name, selected }: { name: ObjectiveIconName; selected: boolean }) {

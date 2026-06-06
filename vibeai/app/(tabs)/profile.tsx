@@ -13,20 +13,28 @@ import { LinearGradient } from 'expo-linear-gradient';
 import Svg, { Path } from 'react-native-svg';
 import { colors } from '@/constants/theme';
 import { useAuthStore } from '@/store/authStore';
+import { useVibeStore } from '@/store/vibeStore';
 
 export default function ProfileScreen() {
-  const { user, logout } = useAuthStore();
+  const { user, logout, deleteAccount } = useAuthStore();
+  const { clear } = useVibeStore();
   const [deleteModalOpen, setDeleteModalOpen] = useState(false);
 
-  const handleLogout = () => {
-    logout();
+  const handleLogout = async () => {
+    await logout();
+    clear();
     router.replace('/(auth)/welcome');
   };
 
-  const handleDeleteAccount = () => {
-    setDeleteModalOpen(false);
-    logout();
-    router.replace('/(auth)/welcome');
+  const handleDeleteAccount = async () => {
+    try {
+      await deleteAccount();
+      clear();
+      setDeleteModalOpen(false);
+      router.replace('/(auth)/welcome');
+    } catch {
+      setDeleteModalOpen(false);
+    }
   };
 
   const initials = user?.name?.[0]?.toUpperCase() || 'U';

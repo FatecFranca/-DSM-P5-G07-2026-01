@@ -14,28 +14,22 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { LinearGradient } from 'expo-linear-gradient';
 import Svg, { Path, Circle } from 'react-native-svg';
 import { colors } from '@/constants/theme';
-import { MOCK_AUTH, useAuthStore } from '@/store/authStore';
+import { useAuthStore } from '@/store/authStore';
 
 export default function LoginScreen() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [authError, setAuthError] = useState('');
-  const { setUser, setToken } = useAuthStore();
+  const { login, isLoading } = useAuthStore();
 
-  const handleLogin = () => {
-    const isMockAccount =
-      email.trim().toLowerCase() === MOCK_AUTH.email &&
-      password === MOCK_AUTH.password;
-
-    if (isMockAccount) {
-      setUser(MOCK_AUTH.user);
-      setToken(MOCK_AUTH.token);
+  const handleLogin = async () => {
+    try {
+      await login(email, password);
       router.replace('/(tabs)');
-      return;
+    } catch {
+      setAuthError('Login ou senha estão incorretos.');
     }
-
-    setAuthError('Login ou senha estão incorretos.');
   };
 
   return (
@@ -126,6 +120,7 @@ export default function LoginScreen() {
           <Pressable
             style={({ pressed }) => [styles.btnPrimary, pressed && styles.pressed]}
             onPress={handleLogin}
+            disabled={isLoading}
           >
             <LinearGradient
               colors={[colors.primary, colors.secondary]}
@@ -133,7 +128,7 @@ export default function LoginScreen() {
               end={{ x: 1, y: 0 }}
               style={styles.btnGradient}
             >
-              <Text style={styles.btnText}>Entrar</Text>
+              <Text style={styles.btnText}>{isLoading ? 'Entrando...' : 'Entrar'}</Text>
             </LinearGradient>
           </Pressable>
 

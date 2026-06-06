@@ -2,19 +2,17 @@ import { IsNotEmpty, IsString, Length, Matches } from 'class-validator';
 import { ApiProperty } from '@nestjs/swagger';
 import { MatchProperty } from '../../common/validators/match-property.validator';
 
-/**
- * DTO para resetar senha (RNF-S03)
- * Valida força da senha e confirmação
- */
 export class ResetPasswordDto {
   @ApiProperty({
-    example: 'abc123def456ghi789...',
-    description: 'Token enviado no email para reset de senha (64 caracteres hex)',
-    minLength: 64,
-    maxLength: 64,
+    example: '123456',
+    description: 'Código de 6 dígitos enviado no email para reset de senha',
+    minLength: 6,
+    maxLength: 6,
   })
-  @IsNotEmpty({ message: 'Token é obrigatório' })
-  @IsString({ message: 'Token deve ser uma string' })
+  @IsNotEmpty({ message: 'Código é obrigatório' })
+  @IsString({ message: 'Código deve ser uma string' })
+  @Length(6, 6, { message: 'Código deve ter 6 dígitos' })
+  @Matches(/^\d{6}$/, { message: 'Código deve conter apenas números' })
   token!: string;
 
   @ApiProperty({
@@ -38,23 +36,3 @@ export class ResetPasswordDto {
   @MatchProperty('password', { message: 'Senhas não correspondem' })
   passwordConfirmation!: string;
 }
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-

@@ -4,7 +4,7 @@ import { CreateUserDto } from './dto/create-user.dto';
 import { UpdateUserDto } from './dto/update-user.dto';
 import { EmailService } from './services/email.service';
 import * as bcrypt from 'bcrypt';
-import { randomBytes } from 'crypto';
+import { randomBytes, randomInt } from 'crypto';
 
 @Injectable()
 export class UsersService {
@@ -80,12 +80,12 @@ export class UsersService {
       const user = await this.findByEmail(email);
       if (!user) {
         // Retornar mensagem genérica por segurança
-        return { message: 'Se o email existir, um link de reset foi enviado' };
+        return { message: 'Se o email existir, um código de reset foi enviado' };
       }
 
-      // Gerar token aleatório seguro (32 bytes = 64 caracteres hex)
-      const rawToken = randomBytes(32).toString('hex');
-      const tokenHash = await bcrypt.hash(rawToken, 10);
+      // Gerar código numérico de 6 dígitos para uso direto no app.
+      const resetCode = randomInt(100000, 1000000).toString();
+      const tokenHash = await bcrypt.hash(resetCode, 10);
 
       // Salvar token no banco com expiração de 1 hora
       const expiresAt = new Date(Date.now() + 60 * 60 * 1000); // 1 hora
@@ -97,13 +97,10 @@ export class UsersService {
         },
       });
 
-      // Construir link de reset (frontend URL)
-      const resetLink = `${process.env.FRONTEND_URL || 'http://localhost:2000'}/reset-password?token=${rawToken}`;
-
       // Enviar email
-      await this.emailService.sendPasswordResetEmail(email, resetLink);
+      await this.emailService.sendPasswordResetEmail(email, resetCode);
 
-      return { message: 'Se o email existir, um link de reset foi enviado' };
+      return { message: 'Se o email existir, um código de reset foi enviado' };
     } catch (error: any) {
       throw new InternalServerErrorException('Erro ao solicitar reset de senha');
     }

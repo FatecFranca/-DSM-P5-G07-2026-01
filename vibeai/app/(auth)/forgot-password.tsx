@@ -14,6 +14,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { LinearGradient } from 'expo-linear-gradient';
 import Svg, { Path, Circle } from 'react-native-svg';
 import { colors } from '@/constants/theme';
+import { useAuthStore } from '@/store/authStore';
 
 export default function ForgotPasswordScreen() {
   const [step, setStep] = useState<1 | 2>(1);
@@ -22,6 +23,7 @@ export default function ForgotPasswordScreen() {
   const [newPassword, setNewPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [errors, setErrors] = useState<Record<string, string>>({});
+  const { requestPasswordReset, resetPassword, isLoading } = useAuthStore();
 
   const clearError = (field: string) => {
     if (!errors[field]) return;
@@ -50,16 +52,25 @@ export default function ForgotPasswordScreen() {
     return Object.keys(newErrors).length === 0;
   };
 
-  const handleSendCode = () => {
+  const handleSendCode = async () => {
     if (validateStep1()) {
-      setErrors({});
-      setStep(2);
+      try {
+        await requestPasswordReset(email);
+        setErrors({});
+        setStep(2);
+      } catch {
+        setErrors({ email: 'Não foi possível solicitar a recuperação agora.' });
+      }
     }
   };
 
   const handleResetPassword = () => {
     if (validateStep2()) {
-      router.replace('/(auth)/login');
+      resetPassword(code, newPassword, newPassword)
+        .then(() => router.replace('/(auth)/login'))
+        .catch((error: any) => {
+          setErrors({ code: error?.message ?? 'Código inválido ou expirado.' });
+        });
     }
   };
 
@@ -85,7 +96,7 @@ export default function ForgotPasswordScreen() {
             <>
               <View style={styles.header}>
                 <Text style={styles.title}>Esqueci minha senha</Text>
-                <Text style={styles.subtitle}>Caso o e-mail exista, enviaremos um código de recuperação.</Text>
+                <Text style={styles.subtitle}>Caso o e-mail exista, enviaremos um código de 6 dígitos.</Text>
               </View>
 
               <View style={styles.form}>
@@ -108,7 +119,7 @@ export default function ForgotPasswordScreen() {
                 </View>
               </View>
 
-              <PrimaryButton label="Enviar código" onPress={handleSendCode} />
+              <PrimaryButton label={isLoading ? 'Enviando...' : 'Enviar código'} onPress={handleSendCode} disabled={isLoading} />
             </>
           ) : (
             <>
@@ -118,7 +129,7 @@ export default function ForgotPasswordScreen() {
                 </View>
                 <Text style={styles.title}>Verifique seu e-mail</Text>
                 <Text style={styles.subtitle}>
-                  Caso o e-mail informado exista, você receberá um código para redefinir sua senha.
+                  Caso o e-mail informado exista, você receberá um código de 6 dígitos para redefinir sua senha.
                 </Text>
               </View>
 
@@ -170,7 +181,7 @@ export default function ForgotPasswordScreen() {
                 </View>
               </View>
 
-              <PrimaryButton label="Redefinir senha" onPress={handleResetPassword} />
+              <PrimaryButton label={isLoading ? 'Redefinindo...' : 'Redefinir senha'} onPress={handleResetPassword} disabled={isLoading} />
             </>
           )}
         </ScrollView>
@@ -179,11 +190,12 @@ export default function ForgotPasswordScreen() {
   );
 }
 
-function PrimaryButton({ label, onPress }: { label: string; onPress: () => void }) {
+function PrimaryButton({ label, onPress, disabled }: { label: string; onPress: () => void; disabled?: boolean }) {
   return (
     <Pressable
-      style={({ pressed }) => [styles.btnPrimary, pressed && styles.pressed]}
+      style={({ pressed }) => [styles.btnPrimary, disabled && styles.btnDisabled, pressed && !disabled && styles.pressed]}
       onPress={onPress}
+      disabled={disabled}
     >
       <LinearGradient
         colors={[colors.primary, colors.secondary]}
@@ -360,6 +372,9 @@ const styles = StyleSheet.create({
     overflow: 'hidden',
     marginTop: 'auto',
     marginBottom: 24,
+  },
+  btnDisabled: {
+    opacity: 0.68,
   },
   btnGradient: {
     height: 56,

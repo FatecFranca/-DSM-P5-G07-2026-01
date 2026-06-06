@@ -88,7 +88,7 @@ export class UsersController {
     description: 'Link enviado (se email existe) - mensagem genérica por segurança',
     schema: {
       example: {
-        message: 'Se o email existir, um link de reset foi enviado para o seu email',
+        message: 'Se o email existir, um código de reset foi enviado para o seu email',
       },
     },
   })

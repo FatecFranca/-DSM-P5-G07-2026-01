@@ -63,7 +63,7 @@ export default function WelcomeScreen() {
 
           {/* Subtitulo */}
           <Text style={styles.subtitle}>
-            O primeiro streaming inteligente guiado pelo seu humor e contexto.
+            Descubra músicas com inteligência artificial, adaptadas ao seu momento.
           </Text>
 
           {/* Botoes */}

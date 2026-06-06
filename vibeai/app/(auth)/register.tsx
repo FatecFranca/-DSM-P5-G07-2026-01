@@ -14,7 +14,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { LinearGradient } from 'expo-linear-gradient';
 import Svg, { Path, Circle } from 'react-native-svg';
 import { colors } from '@/constants/theme';
-import { MOCK_AUTH, useAuthStore } from '@/store/authStore';
+import { useAuthStore } from '@/store/authStore';
 
 export default function RegisterScreen() {
   const [name, setName] = useState('');
@@ -27,7 +27,7 @@ export default function RegisterScreen() {
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [errors, setErrors] = useState<Record<string, string>>({});
-  const { setUser, setToken } = useAuthStore();
+  const { register, isLoading } = useAuthStore();
   const isFormComplete =
     Boolean(name.trim()) &&
     Boolean(lastName.trim()) &&
@@ -84,8 +84,6 @@ export default function RegisterScreen() {
       newErrors.email = 'E-mail obrigatório';
     } else if (!/\S+@\S+\.\S+/.test(normalizedEmail)) {
       newErrors.email = 'Informe um e-mail válido';
-    } else if (normalizedEmail === MOCK_AUTH.email) {
-      newErrors.email = 'Este e-mail já está cadastrado';
     }
 
     if (!confirmEmail.trim()) {
@@ -110,18 +108,27 @@ export default function RegisterScreen() {
     return Object.keys(newErrors).length === 0;
   };
 
-  const handleRegister = () => {
+  const handleRegister = async () => {
     if (validate()) {
-      setUser({
-        id: `mock-user-${Date.now()}`,
-        name: name.trim(),
-        lastName: lastName.trim(),
-        email: email.trim().toLowerCase(),
-        birthDate,
-        createdAt: new Date().toISOString(),
-      });
-      setToken(MOCK_AUTH.token);
-      router.replace('/(tabs)');
+      try {
+        await register({
+          name: `${name.trim()} ${lastName.trim()}`.trim(),
+          email: email.trim().toLowerCase(),
+          emailConfirmation: confirmEmail.trim().toLowerCase(),
+          password,
+          passwordConfirmation: confirmPassword,
+          dateOfBirth: toBackendDate(birthDate),
+        });
+        router.replace('/(auth)/login');
+      } catch (error: any) {
+        const message = String(error?.message ?? '');
+        if (error?.status === 409 || message.toLowerCase().includes('cadastrado')) {
+          setErrors({ email: 'Este e-mail já está cadastrado' });
+          return;
+        }
+
+        setErrors({ form: message || 'Não foi possível concluir o cadastro' });
+      }
     }
   };
 
@@ -130,6 +137,11 @@ export default function RegisterScreen() {
     if (cleaned.length <= 2) return cleaned;
     if (cleaned.length <= 4) return `${cleaned.slice(0, 2)}/${cleaned.slice(2)}`;
     return `${cleaned.slice(0, 2)}/${cleaned.slice(2, 4)}/${cleaned.slice(4, 8)}`;
+  };
+
+  const toBackendDate = (date: string) => {
+    const [day, month, year] = date.split('/');
+    return `${year}-${month}-${day}`;
   };
 
   return (
@@ -302,21 +314,22 @@ export default function RegisterScreen() {
           <Pressable
             style={({ pressed }) => [
               styles.btnPrimary,
-              !isFormComplete && styles.btnDisabled,
-              pressed && isFormComplete && styles.pressed,
+              (!isFormComplete || isLoading) && styles.btnDisabled,
+              pressed && isFormComplete && !isLoading && styles.pressed,
             ]}
             onPress={handleRegister}
-            disabled={!isFormComplete}
+            disabled={!isFormComplete || isLoading}
           >
             <LinearGradient
-              colors={isFormComplete ? [colors.primary, colors.secondary] : ['#2A3142', '#2A3142']}
+              colors={isFormComplete && !isLoading ? [colors.primary, colors.secondary] : ['#2A3142', '#2A3142']}
               start={{ x: 0, y: 0 }}
               end={{ x: 1, y: 0 }}
               style={styles.btnGradient}
             >
-              <Text style={styles.btnText}>Concluir Cadastro</Text>
+              <Text style={styles.btnText}>{isLoading ? 'Criando conta...' : 'Concluir Cadastro'}</Text>
             </LinearGradient>
           </Pressable>
+          {errors.form && <Text style={styles.formError}>{errors.form}</Text>}
         </ScrollView>
       </KeyboardAvoidingView>
     </SafeAreaView>
@@ -459,6 +472,15 @@ const styles = StyleSheet.create({
     lineHeight: 19,
     color: colors.danger,
     marginTop: 2,
+  },
+  formError: {
+    fontFamily: 'Inter_500Medium',
+    fontSize: 14,
+    lineHeight: 20,
+    color: colors.danger,
+    textAlign: 'center',
+    marginTop: -10,
+    marginBottom: 18,
   },
   btnPrimary: {
     width: '100%',

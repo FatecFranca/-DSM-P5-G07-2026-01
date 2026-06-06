@@ -6,17 +6,27 @@ import {
   ScrollView,
   ImageBackground,
 } from 'react-native';
-import { router } from 'expo-router';
+import { router, useFocusEffect } from 'expo-router';
+import { useCallback } from 'react';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { LinearGradient } from 'expo-linear-gradient';
 import Svg, { Path, Circle } from 'react-native-svg';
 import { colors } from '@/constants/theme';
 import { useAuthStore } from '@/store/authStore';
 import { useVibeStore } from '@/store/vibeStore';
+import { getPlaylistArtwork } from '@/services/api';
 
 export default function HomeScreen() {
-  const { user } = useAuthStore();
-  const { savedVibes } = useVibeStore();
+  const { user, token } = useAuthStore();
+  const { playlists, loadHistory, error } = useVibeStore();
+
+  useFocusEffect(
+    useCallback(() => {
+      if (token) {
+        loadHistory(token).catch(() => undefined);
+      }
+    }, [token, loadHistory])
+  );
 
   const getGreeting = () => {
     const hour = new Date().getHours();
@@ -25,7 +35,7 @@ export default function HomeScreen() {
     return 'Boa noite,';
   };
 
-  const hasVibes = savedVibes.length > 0;
+  const hasVibes = playlists.length > 0;
 
   return (
     <SafeAreaView style={styles.safe}>
@@ -42,20 +52,22 @@ export default function HomeScreen() {
 
         {hasVibes ? (
           <View style={styles.vibeList}>
-            {savedVibes.map((vibe) => (
-              <Pressable
-                key={vibe.id}
+            {playlists.map((playlist) => {
+              const artwork = getPlaylistArtwork(playlist);
+              return (
+                <Pressable
+                key={playlist.id}
                 style={({ pressed }) => [styles.card, pressed && styles.pressed]}
-                onPress={() => router.push(`/vibe/${vibe.id}`)}
+                onPress={() => router.push(`/vibe/${playlist.id}`)}
               >
                 <ImageBackground
-                  source={{ uri: vibe.image }}
+                  source={{ uri: artwork.image }}
                   style={styles.cardImage}
                   imageStyle={styles.cardImageStyle}
                   resizeMode="cover"
                 >
                   <LinearGradient
-                    colors={[...vibe.gradientColors, 'rgba(11,15,26,0.10)'] as any}
+                    colors={[...artwork.gradientColors, 'rgba(11,15,26,0.10)'] as any}
                     start={{ x: 0, y: 0 }}
                     end={{ x: 1, y: 1 }}
                     style={[StyleSheet.absoluteFill, styles.colorOverlay]}
@@ -69,15 +81,17 @@ export default function HomeScreen() {
                   <View style={styles.cardContent}>
                     <View style={styles.tags}>
                       <View style={styles.tag}>
-                        <Text style={styles.tagText}>{vibe.energy} Energia</Text>
+                        <Text style={styles.tagText}>{getEnergyLabel(playlist.energyLevel)} Energia</Text>
                       </View>
                       <View style={styles.tag}>
-                        <Text style={styles.tagText}>{vibe.mood}</Text>
+                        <Text style={styles.tagText}>{getMoodLabel(playlist.mood)}</Text>
                       </View>
                     </View>
 
-                    <Text style={styles.cardTitle}>{vibe.title}</Text>
-                    <Text style={styles.cardDesc} numberOfLines={1}>{vibe.desc}</Text>
+                    <Text style={styles.cardTitle}>{playlist.name}</Text>
+                    <Text style={styles.cardDesc} numberOfLines={1}>
+                      {playlist.totalTracks} faixas recomendadas
+                    </Text>
                   </View>
 
                   <View style={styles.arrowButton}>
@@ -85,7 +99,8 @@ export default function HomeScreen() {
                   </View>
                 </ImageBackground>
               </Pressable>
-            ))}
+              );
+            })}
           </View>
         ) : (
           <View style={styles.emptyState}>
@@ -94,7 +109,7 @@ export default function HomeScreen() {
             </View>
             <Text style={styles.emptyTitle}>Você ainda não possui nenhuma vibe criada.</Text>
             <Text style={styles.emptyText}>
-              Clique abaixo para iniciar e gerar uma playlist para o seu momento.
+              {error || 'Clique abaixo para iniciar e gerar uma playlist para o seu momento.'}
             </Text>
             <Pressable
               style={({ pressed }) => [styles.createButton, pressed && styles.pressed]}
@@ -115,6 +130,25 @@ export default function HomeScreen() {
       </ScrollView>
     </SafeAreaView>
   );
+}
+
+function getEnergyLabel(energy: string) {
+  const labels: Record<string, string> = {
+    LOW: 'Baixa',
+    MEDIUM: 'Média',
+    HIGH: 'Alta',
+  };
+  return labels[energy] ?? energy;
+}
+
+function getMoodLabel(mood: string) {
+  const labels: Record<string, string> = {
+    HAPPY: 'Animado',
+    NEUTRAL: 'Neutro',
+    ANXIOUS: 'Tenso',
+    SAD: 'Melancólico',
+  };
+  return labels[mood] ?? mood;
 }
 
 function ArrowRightIcon() {

@@ -10,14 +10,8 @@ import { router, useLocalSearchParams } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import Svg, { Polygon, Line, Circle, Text as SvgText, Path } from 'react-native-svg';
 import { colors } from '@/constants/theme';
-
-const MOCK_TRACKS: Record<string, any> = {
-  t1: { id: 't1', title: 'Midnight City', artist: 'M83', cover: 'https://images.unsplash.com/photo-1614613535308-eb5fbd3d2c17?w=120&q=80', energy: 85, valence: 60, danceability: 70, acousticness: 5, instrumentalness: 40 },
-  t2: { id: 't2', title: 'Starboy', artist: 'The Weeknd', cover: 'https://images.unsplash.com/photo-1571444857442-8af5a5cd41c8?w=120&q=80', energy: 70, valence: 50, danceability: 80, acousticness: 10, instrumentalness: 5 },
-  t3: { id: 't3', title: 'Lost in Yesterday', artist: 'Tame Impala', cover: 'https://images.unsplash.com/photo-1514525253161-7a46d19cd819?w=120&q=80', energy: 65, valence: 75, danceability: 75, acousticness: 20, instrumentalness: 15 },
-  t4: { id: 't4', title: 'Levitating', artist: 'Dua Lipa', cover: 'https://images.unsplash.com/photo-1493225457124-a1a2a5f5287f?w=120&q=80', energy: 80, valence: 90, danceability: 85, acousticness: 5, instrumentalness: 0 },
-  t5: { id: 't5', title: 'Blinding Lights', artist: 'The Weeknd', cover: 'https://images.unsplash.com/photo-1618366712010-f4ae9c647dcb?w=120&q=80', energy: 90, valence: 85, danceability: 80, acousticness: 5, instrumentalness: 0 },
-};
+import { useVibeStore } from '@/store/vibeStore';
+import { Track } from '@/types';
 
 type RadarItem = {
   label: string;
@@ -129,12 +123,13 @@ function RadarChart({ data }: { data: RadarItem[] }) {
 
 export default function TrackDNAScreen() {
   const { trackId } = useLocalSearchParams<{ trackId: string }>();
-  const track = trackId ? MOCK_TRACKS[trackId] : null;
+  const { currentTrack, currentPlaylist, playlists } = useVibeStore();
+  const track = findTrack(trackId, currentTrack, currentPlaylist?.tracks, playlists.flatMap((playlist) => playlist.tracks));
 
   if (!track) {
     return (
       <View style={styles.emptyContainer}>
-        <Text style={styles.emptyText}>Faixa nao encontrada.</Text>
+        <Text style={styles.emptyText}>Faixa não encontrada.</Text>
         <Pressable onPress={() => router.back()}>
           <Text style={styles.backLink}>Voltar</Text>
         </Pressable>
@@ -143,11 +138,11 @@ export default function TrackDNAScreen() {
   }
 
   const radarData: RadarItem[] = [
-    { label: 'Energia', value: track.energy },
-    { label: 'Valência', value: track.valence },
-    { label: 'Dança', value: track.danceability },
-    { label: 'Acústico', value: track.acousticness },
-    { label: 'Instrumental', value: track.instrumentalness },
+    { label: 'Energia', value: toPercent(track.features.energy) },
+    { label: 'Valência', value: toPercent(track.features.valence) },
+    { label: 'Dança', value: toPercent(track.features.danceability) },
+    { label: 'Acústico', value: toPercent(track.features.acousticness) },
+    { label: 'Instrumental', value: toPercent(track.features.instrumentalness) },
   ];
 
   const topAttribute = radarData.reduce((a, b) => (a.value > b.value ? a : b));
@@ -198,26 +193,36 @@ export default function TrackDNAScreen() {
         <View style={styles.explanationCard}>
           <Text style={styles.explanationTitle}>Por que foi recomendada?</Text>
           <Text style={styles.explanationText}>
-            Recomendada por ter <Text style={styles.highlight}>{track.energy}% de energia</Text> e{' '}
-            <Text style={styles.highlight}>{topAttribute.label} destacado</Text>, ideal para o seu objetivo atual.
-            A batida ajuda a manter o foco constante.
+            Recomendada por ter <Text style={styles.highlight}>{toPercent(track.features.energy)}% de energia</Text> e{' '}
+            <Text style={styles.highlight}>{topAttribute.label} destacado</Text>.
+            {track.explanation ? ` ${track.explanation}` : ' A combinação de atributos combina com a sua vibe.'}
           </Text>
 
           <View style={styles.tags}>
             <View style={styles.tagPrimary}>
-              <Text style={styles.tagPrimaryText}>Foco</Text>
+              <Text style={styles.tagPrimaryText}>{topAttribute.label}</Text>
             </View>
             <View style={styles.tagSecondary}>
-              <Text style={styles.tagSecondaryText}>Media Energia</Text>
+              <Text style={styles.tagSecondaryText}>Popularidade {track.popularity}</Text>
             </View>
             <View style={styles.tagAccent}>
-              <Text style={styles.tagAccentText}>Neutro</Text>
+              <Text style={styles.tagAccentText}>{track.album}</Text>
             </View>
           </View>
         </View>
       </ScrollView>
     </SafeAreaView>
   );
+}
+
+function findTrack(trackId: string | undefined, currentTrack: Track | null, currentTracks: Track[] = [], allTracks: Track[] = []) {
+  if (!trackId) return null;
+  if (currentTrack?.id === trackId) return currentTrack;
+  return currentTracks.find((track) => track.id === trackId) ?? allTracks.find((track) => track.id === trackId) ?? null;
+}
+
+function toPercent(value: number) {
+  return Math.round(Math.max(0, Math.min(1, value)) * 100);
 }
 
 function SparkleIcon() {
@@ -402,6 +407,7 @@ const styles = StyleSheet.create({
     paddingVertical: 8,
     backgroundColor: `${colors.accent}33`,
     borderRadius: 999,
+    maxWidth: '100%',
   },
   tagAccentText: {
     fontFamily: 'Inter_800ExtraBold',

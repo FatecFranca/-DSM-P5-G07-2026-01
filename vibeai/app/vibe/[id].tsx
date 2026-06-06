@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import {
   View,
   Text,
@@ -12,55 +12,42 @@ import {
 import { router, useLocalSearchParams } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { LinearGradient } from 'expo-linear-gradient';
-import Svg, { Path, Circle } from 'react-native-svg';
+import Svg, { Path } from 'react-native-svg';
 import { colors } from '@/constants/theme';
+import { useAuthStore } from '@/store/authStore';
 import { useVibeStore } from '@/store/vibeStore';
-
-const MOCK_VIBES: Record<string, any> = {
-  '1': {
-    id: '1',
-    title: 'Foco Absoluto',
-    desc: 'Instrumental para trabalho',
-    gradientColors: ['#7C3AED', '#4338CA'],
-    image: 'https://images.unsplash.com/photo-1529421308418-eab98863cee4?w=1080&q=85',
-  },
-  '2': {
-    id: '2',
-    title: 'Treino Pesado',
-    desc: 'Beats intensos para suar',
-    gradientColors: ['#F472B6', '#BE185D'],
-    image: 'https://images.unsplash.com/photo-1526506118085-60ce8714f8c5?w=1080&q=85',
-  },
-  '3': {
-    id: '3',
-    title: 'Relax no fim do dia',
-    desc: 'Acustico e chill',
-    gradientColors: ['#22D3EE', '#0369A1'],
-    image: 'https://images.unsplash.com/photo-1573603088895-d399fbee9653?w=1080&q=85',
-  },
-  generated: {
-    id: 'generated',
-    title: 'Sua Vibe Gerada',
-    desc: 'Criada pela IA para o seu momento',
-    gradientColors: ['#7C3AED', '#22D3EE'],
-    image: 'https://images.unsplash.com/photo-1511379938547-c1f69419868d?w=1080&q=85',
-  },
-};
-
-const MOCK_TRACKS = [
-  { id: 't1', title: 'Midnight City', artist: 'M83', cover: 'https://images.unsplash.com/photo-1614613535308-eb5fbd3d2c17?w=120&q=80' },
-  { id: 't2', title: 'Starboy', artist: 'The Weeknd', cover: 'https://images.unsplash.com/photo-1571444857442-8af5a5cd41c8?w=120&q=80' },
-  { id: 't3', title: 'Lost in Yesterday', artist: 'Tame Impala', cover: 'https://images.unsplash.com/photo-1514525253161-7a46d19cd819?w=120&q=80' },
-  { id: 't4', title: 'Levitating', artist: 'Dua Lipa', cover: 'https://images.unsplash.com/photo-1493225457124-a1a2a5f5287f?w=120&q=80' },
-  { id: 't5', title: 'Blinding Lights', artist: 'The Weeknd', cover: 'https://images.unsplash.com/photo-1618366712010-f4ae9c647dcb?w=120&q=80' },
-];
+import { getPlaylistArtwork } from '@/services/api';
+import { Playlist, Track } from '@/types';
 
 export default function VibeDetailScreen() {
   const { id, fromGenerated } = useLocalSearchParams<{ id: string; fromGenerated?: string }>();
-  const { savedVibes, removeSavedVibe } = useVibeStore();
+  const { token } = useAuthStore();
+  const {
+    playlists,
+    currentPlaylist,
+    loadPlaylistDetails,
+    deletePlaylist,
+    setCurrentTrack,
+    error,
+  } = useVibeStore();
   const [deleteModalOpen, setDeleteModalOpen] = useState(false);
-  const savedVibe = id ? savedVibes.find((item) => item.id === id) : null;
-  const vibe = savedVibe ?? (id ? MOCK_VIBES[id] ?? MOCK_VIBES.generated : MOCK_VIBES.generated);
+  const [loading, setLoading] = useState(true);
+
+  const playlist = currentPlaylist?.id === id
+    ? currentPlaylist
+    : playlists.find((item) => item.id === id);
+
+  useEffect(() => {
+    if (!token || !id) {
+      router.replace('/(auth)/login');
+      return;
+    }
+
+    loadPlaylistDetails(token, id)
+      .catch(() => undefined)
+      .finally(() => setLoading(false));
+  }, [id, token, loadPlaylistDetails]);
+
   const handleBack = () => {
     if (fromGenerated === '1') {
       router.replace('/(tabs)');
@@ -69,23 +56,45 @@ export default function VibeDetailScreen() {
 
     router.back();
   };
-  const handleDeleteVibe = () => {
-    if (id) removeSavedVibe(id);
-    setDeleteModalOpen(false);
-    router.replace('/(tabs)');
+
+  const handleDeleteVibe = async () => {
+    if (!token || !id) return;
+
+    try {
+      await deletePlaylist(token, id);
+      setDeleteModalOpen(false);
+      router.replace('/(tabs)');
+    } catch {
+      setDeleteModalOpen(false);
+    }
   };
+
+  const handleOpenDna = (track: Track) => {
+    setCurrentTrack(track);
+    router.push({ pathname: '/vibe/dna', params: { trackId: track.id, playlistId: playlist?.id } });
+  };
+
+  if (loading || !playlist) {
+    return (
+      <View style={styles.loadingContainer}>
+        <Text style={styles.loadingText}>{error || 'Carregando vibe...'}</Text>
+      </View>
+    );
+  }
+
+  const artwork = getPlaylistArtwork(playlist);
 
   return (
     <View style={styles.container}>
       <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.scroll}>
         <ImageBackground
-          source={{ uri: vibe.image }}
+          source={{ uri: artwork.image }}
           style={styles.hero}
           imageStyle={styles.heroImage}
           resizeMode="cover"
         >
           <LinearGradient
-            colors={[...vibe.gradientColors, 'rgba(11,15,26,0.08)'] as any}
+            colors={[...artwork.gradientColors, 'rgba(11,15,26,0.08)'] as any}
             start={{ x: 0, y: 0 }}
             end={{ x: 1, y: 1 }}
             style={[StyleSheet.absoluteFill, styles.colorOverlay]}
@@ -105,9 +114,9 @@ export default function VibeDetailScreen() {
             </Pressable>
 
             <View style={styles.heroText}>
-              <Text style={styles.heroTitle}>{vibe.title}</Text>
+              <Text style={styles.heroTitle}>{playlist.name}</Text>
               <Text style={styles.heroSubtitle}>
-                {vibe.desc} • {MOCK_TRACKS.length} faixas
+                {getEnergyLabel(playlist.energyLevel)} energia • {playlist.totalTracks} faixas
               </Text>
             </View>
           </SafeAreaView>
@@ -124,11 +133,11 @@ export default function VibeDetailScreen() {
           </View>
 
           <View style={styles.trackList}>
-            {MOCK_TRACKS.map((track, index) => (
+            {playlist.tracks.map((track, index) => (
               <Pressable
-                key={track.id}
+                key={`${track.id}-${index}`}
                 style={({ pressed }) => [styles.trackRow, pressed && styles.trackRowPressed]}
-                onPress={() => router.push({ pathname: '/vibe/dna', params: { trackId: track.id } })}
+                onPress={() => handleOpenDna(track)}
               >
                 <Text style={styles.trackNumber}>{index + 1}</Text>
                 <Image source={{ uri: track.cover }} style={styles.trackCover} />
@@ -140,7 +149,7 @@ export default function VibeDetailScreen() {
 
                 <Pressable
                   style={({ pressed }) => [styles.dnaButton, pressed && styles.pressed]}
-                  onPress={() => router.push({ pathname: '/vibe/dna', params: { trackId: track.id } })}
+                  onPress={() => handleOpenDna(track)}
                   hitSlop={10}
                 >
                   <DnaIcon />
@@ -190,6 +199,15 @@ export default function VibeDetailScreen() {
   );
 }
 
+function getEnergyLabel(energy: Playlist['energyLevel']) {
+  const labels = {
+    LOW: 'Baixa',
+    MEDIUM: 'Média',
+    HIGH: 'Alta',
+  };
+  return labels[energy] ?? energy;
+}
+
 function BackIcon() {
   return (
     <Svg width={22} height={22} viewBox="0 0 24 24" fill="none">
@@ -230,6 +248,19 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: colors.background,
+  },
+  loadingContainer: {
+    flex: 1,
+    backgroundColor: colors.background,
+    alignItems: 'center',
+    justifyContent: 'center',
+    padding: 24,
+  },
+  loadingText: {
+    fontFamily: 'Inter_700Bold',
+    fontSize: 18,
+    color: colors.textPrimary,
+    textAlign: 'center',
   },
   scroll: {
     paddingBottom: 34,
