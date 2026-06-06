@@ -3,7 +3,7 @@ import { ColorValue, Pressable, StyleSheet, Text, View } from 'react-native';
 import Svg, { Path, Circle } from 'react-native-svg';
 import { colors } from '@/constants/theme';
 
-type IconName = 'home' | 'plus' | 'library' | 'profile';
+type IconName = 'home' | 'plus' | 'profile';
 type TabRoute = {
   key: string;
   name: string;
@@ -19,7 +19,6 @@ type CustomTabBarProps = {
 const TABS = [
   { routeName: 'index', href: '/(tabs)', label: 'Home', icon: 'home' },
   { routeName: 'create-vibe', href: '/(tabs)/create-vibe', label: 'Criar Vibe', icon: 'plus' },
-  { routeName: 'library', href: '/(tabs)/library', label: 'Biblioteca', icon: 'library' },
   { routeName: 'profile', href: '/(tabs)/profile', label: 'Perfil', icon: 'profile' },
 ] as const;
 
@@ -80,14 +79,6 @@ function TabSvgIcon({ name, color }: { name: IconName; color: ColorValue }) {
     );
   }
 
-  if (name === 'library') {
-    return (
-      <Svg width={24} height={24} viewBox="0 0 24 24" fill="none">
-        <Path d="M6 5v14M12 5v14M18 8v11" stroke={color} strokeWidth={2} strokeLinecap="round" />
-      </Svg>
-    );
-  }
-
   return (
     <Svg width={24} height={24} viewBox="0 0 24 24" fill="none">
       <Circle cx={12} cy={8} r={4} stroke={color} strokeWidth={2} />
@@ -106,7 +97,6 @@ export default function TabsLayout() {
     >
       <Tabs.Screen name="index" />
       <Tabs.Screen name="create-vibe" />
-      <Tabs.Screen name="library" />
       <Tabs.Screen name="profile" />
     </Tabs>
   );
@@ -125,7 +115,7 @@ const styles = StyleSheet.create({
     paddingBottom: 10,
   },
   tabItem: {
-    width: '25%',
+    width: '33.3333%',
     height: '100%',
     alignItems: 'center',
     justifyContent: 'center',

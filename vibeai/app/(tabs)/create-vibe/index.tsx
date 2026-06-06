@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import {
   Animated,
   View,
@@ -7,7 +7,7 @@ import {
   Pressable,
   ScrollView,
 } from 'react-native';
-import { router } from 'expo-router';
+import { router, useFocusEffect } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { LinearGradient } from 'expo-linear-gradient';
 import Svg, { Path, Circle } from 'react-native-svg';
@@ -37,13 +37,27 @@ const ENERGY_LEVELS = [
 ];
 
 export default function CreateVibeScreen() {
-  const { setVibeRequest } = useVibeStore();
+  const { setVibeRequest, addSavedVibe } = useVibeStore();
   const [step, setStep] = useState(1);
   const [objective, setObjective] = useState('');
   const [energy, setEnergy] = useState('');
   const [mood, setMood] = useState('');
   const [generating, setGenerating] = useState(false);
   const spinValue = useRef(new Animated.Value(0)).current;
+
+  const resetForm = () => {
+    setStep(1);
+    setObjective('');
+    setEnergy('');
+    setMood('');
+    setGenerating(false);
+  };
+
+  useFocusEffect(
+    useCallback(() => {
+      resetForm();
+    }, [])
+  );
 
   useEffect(() => {
     if (!generating) {
@@ -75,8 +89,13 @@ export default function CreateVibeScreen() {
     setGenerating(true);
     setVibeRequest({ objective, energyLevel: energy, mood });
     setTimeout(() => {
-      setGenerating(false);
-      router.push('/vibe/generated');
+      const vibe = createSavedVibe(objective, energy, mood);
+      addSavedVibe(vibe);
+      resetForm();
+      router.push({
+        pathname: '/vibe/[id]',
+        params: { id: vibe.id, fromGenerated: '1' },
+      });
     }, 2000);
   };
 
@@ -259,6 +278,61 @@ export default function CreateVibeScreen() {
       </View>
     </SafeAreaView>
   );
+}
+
+function createSavedVibe(objective: string, energy: string, mood: string) {
+  const objectiveMap: Record<string, { title: string; desc: string; image: string; gradientColors: readonly [string, string] }> = {
+    focus: {
+      title: 'Vibe de Foco',
+      desc: 'Musicas para concentrar',
+      image: 'https://images.unsplash.com/photo-1529421308418-eab98863cee4?w=900&q=85',
+      gradientColors: ['#7C3AED', '#4338CA'],
+    },
+    workout: {
+      title: 'Vibe de Energia',
+      desc: 'Faixas para impulsionar seu ritmo',
+      image: 'https://images.unsplash.com/photo-1526506118085-60ce8714f8c5?w=900&q=85',
+      gradientColors: ['#F472B6', '#BE185D'],
+    },
+    relax: {
+      title: 'Vibe para Acalmar',
+      desc: 'Sons para respirar melhor',
+      image: 'https://images.unsplash.com/photo-1573603088895-d399fbee9653?w=900&q=85',
+      gradientColors: ['#22D3EE', '#0369A1'],
+    },
+    mood: {
+      title: 'Vibe de Humor',
+      desc: 'Selecionada para o seu momento',
+      image: 'https://images.unsplash.com/photo-1511379938547-c1f69419868d?w=900&q=85',
+      gradientColors: ['#7C3AED', '#22D3EE'],
+    },
+  };
+
+  const energyMap: Record<string, string> = {
+    low: 'Baixa',
+    medium: 'Média',
+    high: 'Alta',
+  };
+
+  const moodMap: Record<string, string> = {
+    happy: 'Animado',
+    neutral: 'Neutro',
+    anxious: 'Tenso',
+    sad: 'Melancólico',
+  };
+
+  const base = objectiveMap[objective] ?? objectiveMap.mood;
+
+  return {
+    id: `generated-${Date.now()}`,
+    title: base.title,
+    desc: base.desc,
+    energy: energyMap[energy] ?? 'Média',
+    mood: moodMap[mood] ?? 'Neutro',
+    gradientColors: base.gradientColors,
+    image: base.image,
+    createdAt: new Date().toISOString(),
+  };
 }
 
 function ObjectiveIcon({ name, selected }: { name: ObjectiveIconName; selected: boolean }) {

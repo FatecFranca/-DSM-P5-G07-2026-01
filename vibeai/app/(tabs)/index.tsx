@@ -9,42 +9,14 @@ import {
 import { router } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { LinearGradient } from 'expo-linear-gradient';
-import Svg, { Path } from 'react-native-svg';
+import Svg, { Path, Circle } from 'react-native-svg';
 import { colors } from '@/constants/theme';
 import { useAuthStore } from '@/store/authStore';
-
-const MOCK_VIBES = [
-  {
-    id: '1',
-    title: 'Foco Absoluto',
-    desc: 'Instrumental para trabalho',
-    energy: 'Medio',
-    mood: 'Foco',
-    gradientColors: ['#7C3AED', '#4338CA'] as const,
-    image: 'https://images.unsplash.com/photo-1529421308418-eab98863cee4?w=900&q=85',
-  },
-  {
-    id: '2',
-    title: 'Treino Pesado',
-    desc: 'Beats intensos para suar',
-    energy: 'Alto',
-    mood: 'Animado',
-    gradientColors: ['#F472B6', '#BE185D'] as const,
-    image: 'https://images.unsplash.com/photo-1526506118085-60ce8714f8c5?w=900&q=85',
-  },
-  {
-    id: '3',
-    title: 'Relax no fim do dia',
-    desc: 'Acustico e chill',
-    energy: 'Baixo',
-    mood: 'Relax',
-    gradientColors: ['#22D3EE', '#0369A1'] as const,
-    image: 'https://images.unsplash.com/photo-1573603088895-d399fbee9653?w=900&q=85',
-  },
-];
+import { useVibeStore } from '@/store/vibeStore';
 
 export default function HomeScreen() {
   const { user } = useAuthStore();
+  const { savedVibes } = useVibeStore();
 
   const getGreeting = () => {
     const hour = new Date().getHours();
@@ -53,65 +25,93 @@ export default function HomeScreen() {
     return 'Boa noite,';
   };
 
+  const hasVibes = savedVibes.length > 0;
+
   return (
     <SafeAreaView style={styles.safe}>
       <ScrollView
         showsVerticalScrollIndicator={false}
-        contentContainerStyle={styles.scroll}
+        contentContainerStyle={[styles.scroll, !hasVibes && styles.scrollEmpty]}
       >
         <View style={styles.header}>
           <Text style={styles.greeting}>{getGreeting()}</Text>
-          <Text style={styles.userName}>{user?.name || 'Usuario'}</Text>
+          <Text style={styles.userName}>{user?.name || 'Usuário'}</Text>
         </View>
 
-        <Text style={styles.sectionTitle}>Vibes de hoje</Text>
+        <Text style={styles.sectionTitle}>Suas Vibes</Text>
 
-        <View style={styles.vibeList}>
-          {MOCK_VIBES.map((vibe) => (
-            <Pressable
-              key={vibe.id}
-              style={({ pressed }) => [styles.card, pressed && styles.pressed]}
-              onPress={() => router.push(`/vibe/${vibe.id}`)}
-            >
-              <ImageBackground
-                source={{ uri: vibe.image }}
-                style={styles.cardImage}
-                imageStyle={styles.cardImageStyle}
-                resizeMode="cover"
+        {hasVibes ? (
+          <View style={styles.vibeList}>
+            {savedVibes.map((vibe) => (
+              <Pressable
+                key={vibe.id}
+                style={({ pressed }) => [styles.card, pressed && styles.pressed]}
+                onPress={() => router.push(`/vibe/${vibe.id}`)}
               >
-                <LinearGradient
-                  colors={[...vibe.gradientColors, 'rgba(11,15,26,0.10)'] as any}
-                  start={{ x: 0, y: 0 }}
-                  end={{ x: 1, y: 1 }}
-                  style={[StyleSheet.absoluteFill, styles.colorOverlay]}
-                />
-                <LinearGradient
-                  colors={['rgba(11,15,26,0.04)', 'rgba(11,15,26,0.50)', 'rgba(11,15,26,0.96)']}
-                  locations={[0, 0.52, 1]}
-                  style={StyleSheet.absoluteFill}
-                />
+                <ImageBackground
+                  source={{ uri: vibe.image }}
+                  style={styles.cardImage}
+                  imageStyle={styles.cardImageStyle}
+                  resizeMode="cover"
+                >
+                  <LinearGradient
+                    colors={[...vibe.gradientColors, 'rgba(11,15,26,0.10)'] as any}
+                    start={{ x: 0, y: 0 }}
+                    end={{ x: 1, y: 1 }}
+                    style={[StyleSheet.absoluteFill, styles.colorOverlay]}
+                  />
+                  <LinearGradient
+                    colors={['rgba(11,15,26,0.04)', 'rgba(11,15,26,0.50)', 'rgba(11,15,26,0.96)']}
+                    locations={[0, 0.52, 1]}
+                    style={StyleSheet.absoluteFill}
+                  />
 
-                <View style={styles.cardContent}>
-                  <View style={styles.tags}>
-                    <View style={styles.tag}>
-                      <Text style={styles.tagText}>{vibe.energy} Energia</Text>
+                  <View style={styles.cardContent}>
+                    <View style={styles.tags}>
+                      <View style={styles.tag}>
+                        <Text style={styles.tagText}>{vibe.energy} Energia</Text>
+                      </View>
+                      <View style={styles.tag}>
+                        <Text style={styles.tagText}>{vibe.mood}</Text>
+                      </View>
                     </View>
-                    <View style={styles.tag}>
-                      <Text style={styles.tagText}>{vibe.mood}</Text>
-                    </View>
+
+                    <Text style={styles.cardTitle}>{vibe.title}</Text>
+                    <Text style={styles.cardDesc} numberOfLines={1}>{vibe.desc}</Text>
                   </View>
 
-                  <Text style={styles.cardTitle}>{vibe.title}</Text>
-                  <Text style={styles.cardDesc} numberOfLines={1}>{vibe.desc}</Text>
-                </View>
-
-                <View style={styles.arrowButton}>
-                  <ArrowRightIcon />
-                </View>
-              </ImageBackground>
+                  <View style={styles.arrowButton}>
+                    <ArrowRightIcon />
+                  </View>
+                </ImageBackground>
+              </Pressable>
+            ))}
+          </View>
+        ) : (
+          <View style={styles.emptyState}>
+            <View style={styles.emptyIcon}>
+              <SparkleIcon />
+            </View>
+            <Text style={styles.emptyTitle}>Você ainda não possui nenhuma vibe criada.</Text>
+            <Text style={styles.emptyText}>
+              Clique abaixo para iniciar e gerar uma playlist para o seu momento.
+            </Text>
+            <Pressable
+              style={({ pressed }) => [styles.createButton, pressed && styles.pressed]}
+              onPress={() => router.push('/(tabs)/create-vibe')}
+            >
+              <LinearGradient
+                colors={[colors.primary, colors.secondary]}
+                start={{ x: 0, y: 0 }}
+                end={{ x: 1, y: 0 }}
+                style={styles.createButtonGradient}
+              >
+                <PlusIcon />
+                <Text style={styles.createButtonText}>Criar Vibe</Text>
+              </LinearGradient>
             </Pressable>
-          ))}
-        </View>
+          </View>
+        )}
       </ScrollView>
     </SafeAreaView>
   );
@@ -120,13 +120,25 @@ export default function HomeScreen() {
 function ArrowRightIcon() {
   return (
     <Svg width={22} height={22} viewBox="0 0 24 24" fill="none">
-      <Path
-        d="M5 12h14M13 6l6 6-6 6"
-        stroke={colors.textPrimary}
-        strokeWidth={2}
-        strokeLinecap="round"
-        strokeLinejoin="round"
-      />
+      <Path d="M5 12h14M13 6l6 6-6 6" stroke={colors.textPrimary} strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" />
+    </Svg>
+  );
+}
+
+function PlusIcon() {
+  return (
+    <Svg width={22} height={22} viewBox="0 0 24 24" fill="none">
+      <Circle cx={12} cy={12} r={9} stroke={colors.textPrimary} strokeWidth={2} />
+      <Path d="M12 8v8M8 12h8" stroke={colors.textPrimary} strokeWidth={2} strokeLinecap="round" />
+    </Svg>
+  );
+}
+
+function SparkleIcon() {
+  return (
+    <Svg width={34} height={34} viewBox="0 0 24 24" fill="none">
+      <Path d="M12 3l1.3 4.2L17.5 8.5l-4.2 1.3L12 14l-1.3-4.2-4.2-1.3 4.2-1.3L12 3z" stroke={colors.secondary} strokeWidth={1.8} strokeLinejoin="round" />
+      <Path d="M18 14l.7 2.2L21 17l-2.3.8L18 20l-.8-2.2L15 17l2.2-.8L18 14z" stroke={colors.secondary} strokeWidth={1.8} strokeLinejoin="round" />
     </Svg>
   );
 }
@@ -140,6 +152,9 @@ const styles = StyleSheet.create({
     paddingHorizontal: 24,
     paddingTop: 22,
     paddingBottom: 108,
+  },
+  scrollEmpty: {
+    flexGrow: 1,
   },
   header: {
     marginBottom: 36,
@@ -159,8 +174,8 @@ const styles = StyleSheet.create({
   },
   sectionTitle: {
     fontFamily: 'Inter_800ExtraBold',
-    fontSize: 22,
-    lineHeight: 29,
+    fontSize: 27,
+    lineHeight: 34,
     color: colors.textPrimary,
     marginBottom: 20,
   },
@@ -229,6 +244,58 @@ const styles = StyleSheet.create({
     backgroundColor: 'rgba(255,255,255,0.22)',
     alignItems: 'center',
     justifyContent: 'center',
+  },
+  emptyState: {
+    flex: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingTop: 64,
+    paddingBottom: 80,
+  },
+  emptyIcon: {
+    width: 76,
+    height: 76,
+    borderRadius: 24,
+    backgroundColor: colors.surface,
+    borderWidth: 1,
+    borderColor: 'rgba(255,255,255,0.08)',
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginBottom: 22,
+  },
+  emptyTitle: {
+    fontFamily: 'Inter_800ExtraBold',
+    fontSize: 22,
+    lineHeight: 29,
+    color: colors.textPrimary,
+    textAlign: 'center',
+    marginBottom: 10,
+  },
+  emptyText: {
+    fontFamily: 'Inter_400Regular',
+    fontSize: 16,
+    lineHeight: 24,
+    color: colors.textSecondary,
+    textAlign: 'center',
+    marginBottom: 28,
+  },
+  createButton: {
+    width: '100%',
+    borderRadius: 999,
+    overflow: 'hidden',
+  },
+  createButtonGradient: {
+    height: 56,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 10,
+    borderRadius: 999,
+  },
+  createButtonText: {
+    fontFamily: 'Inter_800ExtraBold',
+    fontSize: 17,
+    color: colors.textPrimary,
   },
   pressed: {
     opacity: 0.86,

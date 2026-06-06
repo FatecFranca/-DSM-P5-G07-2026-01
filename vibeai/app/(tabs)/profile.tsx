@@ -10,14 +10,12 @@ import {
 import { router } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { LinearGradient } from 'expo-linear-gradient';
-import Svg, { Path, Circle } from 'react-native-svg';
+import Svg, { Path } from 'react-native-svg';
 import { colors } from '@/constants/theme';
 import { useAuthStore } from '@/store/authStore';
-import { useOnboardingStore } from '@/store/onboardingStore';
 
 export default function ProfileScreen() {
   const { user, logout } = useAuthStore();
-  const { reset: resetOnboarding } = useOnboardingStore();
   const [deleteModalOpen, setDeleteModalOpen] = useState(false);
 
   const handleLogout = () => {
@@ -25,15 +23,9 @@ export default function ProfileScreen() {
     router.replace('/(auth)/welcome');
   };
 
-  const handleRedoOnboarding = () => {
-    resetOnboarding();
-    router.replace('/(onboarding)/step-1-genres');
-  };
-
   const handleDeleteAccount = () => {
     setDeleteModalOpen(false);
     logout();
-    resetOnboarding();
     router.replace('/(auth)/welcome');
   };
 
@@ -61,17 +53,6 @@ export default function ProfileScreen() {
         </View>
 
         <View style={styles.actions}>
-          <Pressable
-            style={({ pressed }) => [styles.actionRow, pressed && styles.pressed]}
-            onPress={handleRedoOnboarding}
-          >
-            <View style={styles.actionIcon}>
-              <SettingsIcon />
-            </View>
-            <Text style={styles.actionLabel}>Refazer preferências</Text>
-            <ChevronIcon />
-          </Pressable>
-
           <Pressable
             style={({ pressed }) => [styles.actionRow, pressed && styles.pressed]}
             onPress={handleLogout}
@@ -108,7 +89,7 @@ export default function ProfileScreen() {
 
             <Text style={styles.modalTitle}>Excluir conta?</Text>
             <Text style={styles.modalDescription}>
-              Essa ação é irreversível. Todos os seus dados, histórico de vibes e preferências serão anonimizados e apagados permanentemente de nossos servidores (LGPD).
+              Essa ação é irreversível. Todos os seus dados e histórico de vibes serão anonimizados e apagados permanentemente de nossos servidores (LGPD).
             </Text>
 
             <View style={styles.modalActions}>
@@ -130,21 +111,6 @@ export default function ProfileScreen() {
         </View>
       </Modal>
     </SafeAreaView>
-  );
-}
-
-function SettingsIcon() {
-  return (
-    <Svg width={22} height={22} viewBox="0 0 24 24" fill="none">
-      <Circle cx={12} cy={12} r={3} stroke={colors.secondary} strokeWidth={2} />
-      <Path
-        d="M19.4 15a1.7 1.7 0 00.34 1.88l.04.04a2 2 0 01-2.83 2.83l-.04-.04A1.7 1.7 0 0015 19.4a1.7 1.7 0 00-1 .6V20a2 2 0 01-4 0v-.05a1.7 1.7 0 00-1-.6 1.7 1.7 0 00-1.88.34l-.04.04a2 2 0 01-2.83-2.83l.04-.04A1.7 1.7 0 004.6 15a1.7 1.7 0 00-.6-1H4a2 2 0 010-4h.05a1.7 1.7 0 00.6-1 1.7 1.7 0 00-.34-1.88l-.04-.04a2 2 0 012.83-2.83l.04.04A1.7 1.7 0 009 4.6a1.7 1.7 0 001-.6V4a2 2 0 014 0v.05a1.7 1.7 0 001 .6 1.7 1.7 0 001.88-.34l.04-.04a2 2 0 012.83 2.83l-.04.04A1.7 1.7 0 0019.4 9c.2.37.4.7.6 1H20a2 2 0 010 4h-.05c-.2.3-.4.63-.55 1z"
-        stroke={colors.secondary}
-        strokeWidth={1.6}
-        strokeLinecap="round"
-        strokeLinejoin="round"
-      />
-    </Svg>
   );
 }
 

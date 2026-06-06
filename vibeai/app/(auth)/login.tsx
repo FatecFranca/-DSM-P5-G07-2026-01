@@ -20,6 +20,7 @@ export default function LoginScreen() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
+  const [authError, setAuthError] = useState('');
   const { setUser, setToken } = useAuthStore();
 
   const handleLogin = () => {
@@ -31,7 +32,10 @@ export default function LoginScreen() {
       setUser(MOCK_AUTH.user);
       setToken(MOCK_AUTH.token);
       router.replace('/(tabs)');
+      return;
     }
+
+    setAuthError('Login ou senha estão incorretos.');
   };
 
   return (
@@ -71,7 +75,10 @@ export default function LoginScreen() {
                 placeholder="seu@email.com"
                 placeholderTextColor={colors.textSecondary}
                 value={email}
-                onChangeText={setEmail}
+                onChangeText={(value) => {
+                  setEmail(value);
+                  if (authError) setAuthError('');
+                }}
                 keyboardType="email-address"
                 autoCapitalize="none"
                 autoCorrect={false}
@@ -87,7 +94,10 @@ export default function LoginScreen() {
                   placeholder="••••••••"
                   placeholderTextColor={colors.textSecondary}
                   value={password}
-                  onChangeText={setPassword}
+                  onChangeText={(value) => {
+                    setPassword(value);
+                    if (authError) setAuthError('');
+                  }}
                   secureTextEntry={!showPassword}
                   autoCapitalize="none"
                 />
@@ -107,6 +117,8 @@ export default function LoginScreen() {
             >
               <Text style={styles.forgotText}>Esqueci minha senha</Text>
             </Pressable>
+
+            {authError && <Text style={styles.authError}>{authError}</Text>}
 
           </View>
 
@@ -253,6 +265,14 @@ const styles = StyleSheet.create({
     fontSize: 15,
     lineHeight: 22,
     color: colors.primary,
+  },
+  authError: {
+    fontFamily: 'Inter_500Medium',
+    fontSize: 14,
+    lineHeight: 20,
+    color: colors.danger,
+    textAlign: 'right',
+    marginTop: -2,
   },
   btnPrimary: {
     width: '100%',

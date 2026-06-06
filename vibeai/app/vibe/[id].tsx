@@ -1,3 +1,4 @@
+import { useState } from 'react';
 import {
   View,
   Text,
@@ -6,12 +7,14 @@ import {
   ScrollView,
   ImageBackground,
   Image,
+  Modal,
 } from 'react-native';
 import { router, useLocalSearchParams } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { LinearGradient } from 'expo-linear-gradient';
 import Svg, { Path, Circle } from 'react-native-svg';
 import { colors } from '@/constants/theme';
+import { useVibeStore } from '@/store/vibeStore';
 
 const MOCK_VIBES: Record<string, any> = {
   '1': {
@@ -53,8 +56,24 @@ const MOCK_TRACKS = [
 ];
 
 export default function VibeDetailScreen() {
-  const { id } = useLocalSearchParams<{ id: string }>();
-  const vibe = id ? MOCK_VIBES[id] ?? MOCK_VIBES.generated : MOCK_VIBES.generated;
+  const { id, fromGenerated } = useLocalSearchParams<{ id: string; fromGenerated?: string }>();
+  const { savedVibes, removeSavedVibe } = useVibeStore();
+  const [deleteModalOpen, setDeleteModalOpen] = useState(false);
+  const savedVibe = id ? savedVibes.find((item) => item.id === id) : null;
+  const vibe = savedVibe ?? (id ? MOCK_VIBES[id] ?? MOCK_VIBES.generated : MOCK_VIBES.generated);
+  const handleBack = () => {
+    if (fromGenerated === '1') {
+      router.replace('/(tabs)');
+      return;
+    }
+
+    router.back();
+  };
+  const handleDeleteVibe = () => {
+    if (id) removeSavedVibe(id);
+    setDeleteModalOpen(false);
+    router.replace('/(tabs)');
+  };
 
   return (
     <View style={styles.container}>
@@ -80,7 +99,7 @@ export default function VibeDetailScreen() {
           <SafeAreaView style={styles.heroSafe}>
             <Pressable
               style={({ pressed }) => [styles.backButton, pressed && styles.pressed]}
-              onPress={() => router.back()}
+              onPress={handleBack}
             >
               <BackIcon />
             </Pressable>
@@ -97,18 +116,10 @@ export default function VibeDetailScreen() {
         <View style={styles.content}>
           <View style={styles.actions}>
             <Pressable
-              style={({ pressed }) => [styles.regenerateButton, pressed && styles.pressed]}
-              onPress={() => {}}
+              style={({ pressed }) => [styles.deleteVibeButton, pressed && styles.pressed]}
+              onPress={() => setDeleteModalOpen(true)}
             >
-              <RefreshIcon />
-              <Text style={styles.regenerateText}>Gerar nova recomendação</Text>
-            </Pressable>
-
-            <Pressable
-              style={({ pressed }) => [styles.menuButton, pressed && styles.pressed]}
-              onPress={() => {}}
-            >
-              <MenuIcon />
+              <TrashIcon />
             </Pressable>
           </View>
 
@@ -139,6 +150,42 @@ export default function VibeDetailScreen() {
           </View>
         </View>
       </ScrollView>
+
+      <Modal
+        visible={deleteModalOpen}
+        transparent
+        animationType="fade"
+        onRequestClose={() => setDeleteModalOpen(false)}
+      >
+        <View style={styles.modalOverlay}>
+          <View style={styles.modalContent}>
+            <View style={styles.modalIcon}>
+              <TrashIcon />
+            </View>
+
+            <Text style={styles.modalTitle}>Excluir vibe?</Text>
+            <Text style={styles.modalDescription}>
+              Essa vibe será removida da sua Home. Você poderá criar uma nova recomendação quando quiser.
+            </Text>
+
+            <View style={styles.modalActions}>
+              <Pressable
+                style={({ pressed }) => [styles.btnDelete, pressed && styles.pressed]}
+                onPress={handleDeleteVibe}
+              >
+                <Text style={styles.btnDeleteText}>Sim, excluir vibe</Text>
+              </Pressable>
+
+              <Pressable
+                style={({ pressed }) => [styles.btnCancel, pressed && styles.pressed]}
+                onPress={() => setDeleteModalOpen(false)}
+              >
+                <Text style={styles.btnCancelText}>Cancelar</Text>
+              </Pressable>
+            </View>
+          </View>
+        </View>
+      </Modal>
     </View>
   );
 }
@@ -151,20 +198,16 @@ function BackIcon() {
   );
 }
 
-function RefreshIcon() {
+function TrashIcon() {
   return (
-    <Svg width={20} height={20} viewBox="0 0 24 24" fill="none">
-      <Path d="M20 12a8 8 0 10-2.35 5.65M20 12v5h-5" stroke={colors.textPrimary} strokeWidth={1.9} strokeLinecap="round" strokeLinejoin="round" />
-    </Svg>
-  );
-}
-
-function MenuIcon() {
-  return (
-    <Svg width={22} height={22} viewBox="0 0 24 24" fill="none">
-      <Circle cx={12} cy={5} r={1.4} fill={colors.primary} />
-      <Circle cx={12} cy={12} r={1.4} fill={colors.primary} />
-      <Circle cx={12} cy={19} r={1.4} fill={colors.primary} />
+    <Svg width={23} height={23} viewBox="0 0 24 24" fill="none">
+      <Path
+        d="M4 7h16M10 11v6M14 11v6M6 7l1 14h10l1-14M9 7V4h6v3"
+        stroke={colors.danger}
+        strokeWidth={2}
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
     </Svg>
   );
 }
@@ -237,35 +280,16 @@ const styles = StyleSheet.create({
   },
   actions: {
     flexDirection: 'row',
-    gap: 12,
+    justifyContent: 'flex-end',
     marginBottom: 30,
   },
-  regenerateButton: {
-    flex: 1,
-    minHeight: 56,
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: 10,
-    paddingHorizontal: 18,
-    borderRadius: 20,
-    borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.10)',
-    backgroundColor: colors.surface,
-  },
-  regenerateText: {
-    fontFamily: 'Inter_700Bold',
-    fontSize: 16,
-    lineHeight: 21,
-    color: colors.textPrimary,
-    textAlign: 'center',
-  },
-  menuButton: {
-    width: 56,
-    height: 56,
-    borderRadius: 28,
+  deleteVibeButton: {
+    width: 58,
+    height: 58,
+    borderRadius: 29,
     borderWidth: 2,
-    borderColor: colors.primary,
+    borderColor: colors.danger,
+    backgroundColor: 'rgba(239,68,68,0.10)',
     alignItems: 'center',
     justifyContent: 'center',
   },
@@ -317,6 +341,80 @@ const styles = StyleSheet.create({
     height: 42,
     alignItems: 'center',
     justifyContent: 'center',
+  },
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0,0,0,0.82)',
+    alignItems: 'center',
+    justifyContent: 'center',
+    padding: 24,
+  },
+  modalContent: {
+    width: '100%',
+    backgroundColor: colors.surface,
+    borderRadius: 24,
+    padding: 28,
+    borderWidth: 1,
+    borderColor: 'rgba(255,255,255,0.10)',
+  },
+  modalIcon: {
+    width: 52,
+    height: 52,
+    borderRadius: 26,
+    backgroundColor: 'rgba(239,68,68,0.16)',
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginBottom: 16,
+  },
+  modalTitle: {
+    fontFamily: 'Inter_800ExtraBold',
+    fontSize: 24,
+    lineHeight: 31,
+    color: colors.textPrimary,
+    marginBottom: 12,
+  },
+  modalDescription: {
+    fontFamily: 'Inter_400Regular',
+    fontSize: 16,
+    color: colors.textSecondary,
+    lineHeight: 24,
+    marginBottom: 28,
+  },
+  modalActions: {
+    gap: 14,
+  },
+  btnDelete: {
+    width: '100%',
+    height: 58,
+    borderRadius: 999,
+    backgroundColor: colors.danger,
+    alignItems: 'center',
+    justifyContent: 'center',
+    shadowColor: colors.danger,
+    shadowOffset: { width: 0, height: 8 },
+    shadowOpacity: 0.26,
+    shadowRadius: 18,
+    elevation: 8,
+  },
+  btnDeleteText: {
+    fontFamily: 'Inter_800ExtraBold',
+    fontSize: 16,
+    lineHeight: 22,
+    color: colors.textPrimary,
+  },
+  btnCancel: {
+    width: '100%',
+    height: 54,
+    borderRadius: 999,
+    backgroundColor: 'transparent',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  btnCancelText: {
+    fontFamily: 'Inter_700Bold',
+    fontSize: 16,
+    lineHeight: 22,
+    color: colors.textSecondary,
   },
   pressed: {
     opacity: 0.72,

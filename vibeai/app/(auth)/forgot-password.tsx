@@ -1,4 +1,3 @@
-// app/(auth)/forgot-password.tsx
 import { useState } from 'react';
 import {
   View,
@@ -13,7 +12,8 @@ import {
 import { router } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { LinearGradient } from 'expo-linear-gradient';
-import { colors, spacing, radius, fontSize } from '@/constants/theme';
+import Svg, { Path, Circle } from 'react-native-svg';
+import { colors } from '@/constants/theme';
 
 export default function ForgotPasswordScreen() {
   const [step, setStep] = useState<1 | 2>(1);
@@ -23,10 +23,19 @@ export default function ForgotPasswordScreen() {
   const [showPassword, setShowPassword] = useState(false);
   const [errors, setErrors] = useState<Record<string, string>>({});
 
+  const clearError = (field: string) => {
+    if (!errors[field]) return;
+    setErrors((current) => {
+      const next = { ...current };
+      delete next[field];
+      return next;
+    });
+  };
+
   const validateStep1 = (): boolean => {
     const newErrors: Record<string, string> = {};
     if (!email.trim()) newErrors.email = 'E-mail obrigatório';
-    else if (!/\S+@\S+\.\S+/.test(email)) newErrors.email = 'E-mail inválido';
+    else if (!/\S+@\S+\.\S+/.test(email.trim())) newErrors.email = 'Informe um e-mail válido';
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
   };
@@ -34,8 +43,8 @@ export default function ForgotPasswordScreen() {
   const validateStep2 = (): boolean => {
     const newErrors: Record<string, string> = {};
     if (!code.trim()) newErrors.code = 'Código obrigatório';
-    if (newPassword.length < 8 || !/\d/.test(newPassword)) {
-      newErrors.newPassword = 'Mínimo 8 caracteres e 1 número';
+    if (newPassword.length < 8 || !/[A-Za-zÀ-ÿ]/.test(newPassword) || !/\d/.test(newPassword)) {
+      newErrors.newPassword = 'Mínimo 8 caracteres, 1 letra e 1 número';
     }
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
@@ -43,14 +52,13 @@ export default function ForgotPasswordScreen() {
 
   const handleSendCode = () => {
     if (validateStep1()) {
-      // chamada de API entra aqui futuramente
+      setErrors({});
       setStep(2);
     }
   };
 
   const handleResetPassword = () => {
     if (validateStep2()) {
-      // chamada de API entra aqui futuramente
       router.replace('/(auth)/login');
     }
   };
@@ -66,23 +74,20 @@ export default function ForgotPasswordScreen() {
           keyboardShouldPersistTaps="handled"
           showsVerticalScrollIndicator={false}
         >
-          {/* Botão voltar */}
           <Pressable
             style={({ pressed }) => [styles.backButton, pressed && styles.pressed]}
-            onPress={() => router.back()}
+            onPress={() => (step === 2 ? setStep(1) : router.back())}
           >
-            <Text style={styles.backArrow}>←</Text>
+            <BackIcon />
           </Pressable>
 
           {step === 1 ? (
             <>
-              {/* Header step 1 */}
               <View style={styles.header}>
                 <Text style={styles.title}>Esqueci minha senha</Text>
-                <Text style={styles.subtitle}>Enviaremos um código para o seu e-mail.</Text>
+                <Text style={styles.subtitle}>Caso o e-mail exista, enviaremos um código de recuperação.</Text>
               </View>
 
-              {/* Formulário step 1 */}
               <View style={styles.form}>
                 <View style={styles.fieldGroup}>
                   <Text style={styles.label}>E-mail</Text>
@@ -91,7 +96,10 @@ export default function ForgotPasswordScreen() {
                     placeholder="seu@email.com"
                     placeholderTextColor={colors.textSecondary}
                     value={email}
-                    onChangeText={setEmail}
+                    onChangeText={(value) => {
+                      setEmail(value);
+                      clearError('email');
+                    }}
                     keyboardType="email-address"
                     autoCapitalize="none"
                     autoCorrect={false}
@@ -100,37 +108,21 @@ export default function ForgotPasswordScreen() {
                 </View>
               </View>
 
-              <Pressable
-                style={({ pressed }) => [styles.btnPrimary, pressed && styles.pressed]}
-                onPress={handleSendCode}
-              >
-                <LinearGradient
-                  colors={[colors.primary, colors.secondary]}
-                  start={{ x: 0, y: 0 }}
-                  end={{ x: 1, y: 0 }}
-                  style={styles.btnGradient}
-                >
-                  <Text style={styles.btnText}>Enviar código</Text>
-                </LinearGradient>
-              </Pressable>
+              <PrimaryButton label="Enviar código" onPress={handleSendCode} />
             </>
           ) : (
             <>
-              {/* Ícone sucesso */}
-              <View style={styles.successContainer}>
+              <View style={styles.header}>
                 <View style={styles.successIcon}>
-                  <Text style={styles.successEmoji}>✓</Text>
+                  <CheckIcon />
                 </View>
-                <Text style={styles.title}>Código enviado!</Text>
+                <Text style={styles.title}>Verifique seu e-mail</Text>
                 <Text style={styles.subtitle}>
-                  Insira o código que enviamos para {email || 'seu e-mail'}.
+                  Caso o e-mail informado exista, você receberá um código para redefinir sua senha.
                 </Text>
               </View>
 
-              {/* Formulário step 2 */}
               <View style={styles.form}>
-
-                {/* Código */}
                 <View style={styles.fieldGroup}>
                   <Text style={styles.label}>Código</Text>
                   <TextInput
@@ -138,7 +130,10 @@ export default function ForgotPasswordScreen() {
                     placeholder="000000"
                     placeholderTextColor={colors.textSecondary}
                     value={code}
-                    onChangeText={setCode}
+                    onChangeText={(value) => {
+                      setCode(value);
+                      clearError('code');
+                    }}
                     keyboardType="numeric"
                     maxLength={6}
                     textAlign="center"
@@ -146,16 +141,18 @@ export default function ForgotPasswordScreen() {
                   {errors.code && <Text style={styles.errorText}>{errors.code}</Text>}
                 </View>
 
-                {/* Nova senha */}
                 <View style={styles.fieldGroup}>
-                  <Text style={styles.label}>Nova Senha</Text>
+                  <Text style={styles.label}>Nova senha</Text>
                   <View style={styles.inputWrapper}>
                     <TextInput
                       style={[styles.input, styles.inputWithAction, errors.newPassword && styles.inputError]}
                       placeholder="••••••••"
                       placeholderTextColor={colors.textSecondary}
                       value={newPassword}
-                      onChangeText={setNewPassword}
+                      onChangeText={(value) => {
+                        setNewPassword(value);
+                        clearError('newPassword');
+                      }}
                       secureTextEntry={!showPassword}
                       autoCapitalize="none"
                     />
@@ -163,36 +160,91 @@ export default function ForgotPasswordScreen() {
                       style={styles.eyeButton}
                       onPress={() => setShowPassword(!showPassword)}
                     >
-                      <Text style={styles.eyeText}>{showPassword ? '🙈' : '👁️'}</Text>
+                      <EyeIcon visible={showPassword} />
                     </Pressable>
                   </View>
                   {errors.newPassword
                     ? <Text style={styles.errorText}>{errors.newPassword}</Text>
-                    : <Text style={styles.hint}>Mínimo 8 caracteres e 1 número.</Text>
+                    : <Text style={styles.hint}>Mínimo 8 caracteres, 1 letra e 1 número.</Text>
                   }
                 </View>
-
               </View>
 
-              <Pressable
-                style={({ pressed }) => [styles.btnPrimary, pressed && styles.pressed]}
-                onPress={handleResetPassword}
-              >
-                <LinearGradient
-                  colors={[colors.primary, colors.secondary]}
-                  start={{ x: 0, y: 0 }}
-                  end={{ x: 1, y: 0 }}
-                  style={styles.btnGradient}
-                >
-                  <Text style={styles.btnText}>Redefinir Senha</Text>
-                </LinearGradient>
-              </Pressable>
+              <PrimaryButton label="Redefinir senha" onPress={handleResetPassword} />
             </>
           )}
-
         </ScrollView>
       </KeyboardAvoidingView>
     </SafeAreaView>
+  );
+}
+
+function PrimaryButton({ label, onPress }: { label: string; onPress: () => void }) {
+  return (
+    <Pressable
+      style={({ pressed }) => [styles.btnPrimary, pressed && styles.pressed]}
+      onPress={onPress}
+    >
+      <LinearGradient
+        colors={[colors.primary, colors.secondary]}
+        start={{ x: 0, y: 0 }}
+        end={{ x: 1, y: 0 }}
+        style={styles.btnGradient}
+      >
+        <Text style={styles.btnText}>{label}</Text>
+      </LinearGradient>
+    </Pressable>
+  );
+}
+
+function BackIcon() {
+  return (
+    <Svg width={20} height={20} viewBox="0 0 24 24" fill="none">
+      <Path
+        d="M19 12H5M12 19l-7-7 7-7"
+        stroke={colors.textSecondary}
+        strokeWidth={2}
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
+    </Svg>
+  );
+}
+
+function CheckIcon() {
+  return (
+    <Svg width={32} height={32} viewBox="0 0 24 24" fill="none">
+      <Path
+        d="M20 6L9 17l-5-5"
+        stroke={colors.success}
+        strokeWidth={2.4}
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
+    </Svg>
+  );
+}
+
+function EyeIcon({ visible }: { visible: boolean }) {
+  return (
+    <Svg width={20} height={20} viewBox="0 0 24 24" fill="none">
+      <Path
+        d="M2 12s3.5-6 10-6 10 6 10 6-3.5 6-10 6S2 12 2 12z"
+        stroke={colors.textSecondary}
+        strokeWidth={1.8}
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
+      <Circle cx={12} cy={12} r={3} stroke={colors.textSecondary} strokeWidth={1.8} />
+      {visible && (
+        <Path
+          d="M4 20L20 4"
+          stroke={colors.textSecondary}
+          strokeWidth={2}
+          strokeLinecap="round"
+        />
+      )}
+    </Svg>
   );
 }
 
@@ -206,125 +258,119 @@ const styles = StyleSheet.create({
   },
   scroll: {
     flexGrow: 1,
-    paddingHorizontal: spacing.lg,
-    paddingBottom: spacing.xxl,
+    paddingHorizontal: 24,
+    paddingBottom: 32,
   },
   backButton: {
-    marginTop: spacing.md,
-    marginBottom: spacing.lg,
+    marginTop: 32,
+    marginBottom: 24,
     width: 40,
     height: 40,
     justifyContent: 'center',
   },
-  backArrow: {
-    fontSize: 24,
-    color: colors.textSecondary,
-  },
   header: {
-    marginBottom: spacing.xl,
+    marginBottom: 32,
   },
   title: {
-    fontSize: fontSize.xl,
-    fontWeight: '700',
+    fontFamily: 'Inter_700Bold',
+    fontSize: 32,
+    lineHeight: 40,
     color: colors.textPrimary,
-    marginBottom: spacing.xs,
-    textAlign: 'center',
+    marginBottom: 8,
   },
   subtitle: {
-    fontSize: fontSize.md,
+    fontFamily: 'Inter_400Regular',
+    fontSize: 17,
+    lineHeight: 25,
     color: colors.textSecondary,
-    textAlign: 'center',
-    lineHeight: 22,
-  },
-  successContainer: {
-    alignItems: 'center',
-    marginTop: spacing.xl,
-    marginBottom: spacing.xl,
-    gap: spacing.md,
   },
   successIcon: {
     width: 64,
     height: 64,
-    borderRadius: radius.full,
-    backgroundColor: 'rgba(34,197,94,0.20)',
+    borderRadius: 32,
+    backgroundColor: 'rgba(34,197,94,0.18)',
     alignItems: 'center',
     justifyContent: 'center',
-    marginBottom: spacing.sm,
-  },
-  successEmoji: {
-    fontSize: 28,
-    color: colors.success,
-    fontWeight: '700',
+    marginBottom: 18,
   },
   form: {
-    gap: spacing.md,
-    marginBottom: spacing.xl,
+    gap: 16,
+    marginBottom: 24,
   },
   fieldGroup: {
-    gap: spacing.xs,
+    gap: 6,
   },
   label: {
-    fontSize: fontSize.sm,
-    fontWeight: '500',
+    fontFamily: 'Inter_500Medium',
+    fontSize: 15,
+    lineHeight: 22,
     color: colors.textSecondary,
   },
   input: {
     backgroundColor: colors.surface,
-    borderRadius: radius.md,
-    paddingHorizontal: spacing.md,
-    paddingVertical: spacing.md,
+    borderRadius: 12,
+    height: 50,
+    paddingHorizontal: 16,
     color: colors.textPrimary,
-    fontSize: fontSize.md,
+    fontFamily: 'Inter_400Regular',
+    fontSize: 17,
     borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.08)',
+    borderColor: 'rgba(167,176,192,0.18)',
   },
   inputError: {
     borderColor: colors.danger,
   },
   codeInput: {
-    fontSize: fontSize.xl,
-    fontWeight: '700',
+    fontFamily: 'Inter_700Bold',
+    fontSize: 22,
     letterSpacing: 8,
   },
   inputWrapper: {
     position: 'relative',
   },
   inputWithAction: {
-    paddingRight: spacing.xxl + spacing.md,
+    paddingRight: 52,
   },
   eyeButton: {
     position: 'absolute',
-    right: spacing.md,
+    right: 16,
     top: 0,
     bottom: 0,
     justifyContent: 'center',
-  },
-  eyeText: {
-    fontSize: 16,
+    alignItems: 'center',
+    width: 28,
   },
   hint: {
-    fontSize: fontSize.xs,
+    fontFamily: 'Inter_400Regular',
+    fontSize: 13,
+    lineHeight: 19,
     color: colors.textSecondary,
+    marginTop: 2,
   },
   errorText: {
-    fontSize: fontSize.xs,
+    fontFamily: 'Inter_400Regular',
+    fontSize: 13,
+    lineHeight: 19,
     color: colors.danger,
+    marginTop: 2,
   },
   btnPrimary: {
     width: '100%',
-    borderRadius: radius.md,
+    borderRadius: 999,
     overflow: 'hidden',
-    marginBottom: spacing.xl,
+    marginTop: 'auto',
+    marginBottom: 24,
   },
   btnGradient: {
-    paddingVertical: spacing.md,
+    height: 56,
     alignItems: 'center',
-    borderRadius: radius.md,
+    justifyContent: 'center',
+    borderRadius: 999,
   },
   btnText: {
     color: colors.textPrimary,
-    fontSize: fontSize.md,
-    fontWeight: '700',
+    fontFamily: 'Inter_700Bold',
+    fontSize: 17,
   },
   pressed: {
     opacity: 0.8,

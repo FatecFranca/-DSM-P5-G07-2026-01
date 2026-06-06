@@ -28,30 +28,82 @@ export default function RegisterScreen() {
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [errors, setErrors] = useState<Record<string, string>>({});
   const { setUser, setToken } = useAuthStore();
+  const isFormComplete =
+    Boolean(name.trim()) &&
+    Boolean(lastName.trim()) &&
+    Boolean(birthDate.trim()) &&
+    Boolean(email.trim()) &&
+    Boolean(confirmEmail.trim()) &&
+    Boolean(password) &&
+    Boolean(confirmPassword);
+
+  const clearError = (field: string) => {
+    if (!errors[field]) return;
+    setErrors((current) => {
+      const next = { ...current };
+      delete next[field];
+      return next;
+    });
+  };
 
   const validate = (): boolean => {
     const newErrors: Record<string, string> = {};
+    const normalizedEmail = email.trim().toLowerCase();
+    const normalizedConfirmEmail = confirmEmail.trim().toLowerCase();
 
     if (!name.trim()) newErrors.name = 'Nome obrigatório';
     if (!lastName.trim()) newErrors.lastName = 'Sobrenome obrigatório';
+
     if (!birthDate.trim()) {
       newErrors.birthDate = 'Data de nascimento obrigatória';
     } else {
       const [day, month, year] = birthDate.split('/').map(Number);
       const birth = new Date(year, month - 1, day);
       const today = new Date();
-      const age = today.getFullYear() - birth.getFullYear();
-      if (isNaN(birth.getTime()) || age < 13) {
+      const isValidDate =
+        birthDate.length === 10 &&
+        !Number.isNaN(birth.getTime()) &&
+        birth.getDate() === day &&
+        birth.getMonth() === month - 1 &&
+        birth.getFullYear() === year &&
+        birth <= today;
+      let age = today.getFullYear() - birth.getFullYear();
+      const hasHadBirthday =
+        today.getMonth() > birth.getMonth() ||
+        (today.getMonth() === birth.getMonth() && today.getDate() >= birth.getDate());
+      if (!hasHadBirthday) age -= 1;
+
+      if (!isValidDate) {
+        newErrors.birthDate = 'Informe uma data válida no formato DD/MM/AAAA';
+      } else if (age < 13) {
         newErrors.birthDate = 'Você deve ter pelo menos 13 anos';
       }
     }
-    if (!email.trim()) newErrors.email = 'E-mail obrigatório';
-    if (email !== confirmEmail) newErrors.confirmEmail = 'E-mails não coincidem';
-    if (password.length < 8 || !/\d/.test(password)) {
-      newErrors.password = 'Mínimo 8 caracteres e 1 número';
+
+    if (!normalizedEmail) {
+      newErrors.email = 'E-mail obrigatório';
+    } else if (!/\S+@\S+\.\S+/.test(normalizedEmail)) {
+      newErrors.email = 'Informe um e-mail válido';
+    } else if (normalizedEmail === MOCK_AUTH.email) {
+      newErrors.email = 'Este e-mail já está cadastrado';
     }
-    if (password !== confirmPassword) {
-      newErrors.confirmPassword = 'Senhas não coincidem';
+
+    if (!confirmEmail.trim()) {
+      newErrors.confirmEmail = 'Confirme seu e-mail';
+    } else if (normalizedEmail !== normalizedConfirmEmail) {
+      newErrors.confirmEmail = 'Os e-mails não coincidem';
+    }
+
+    if (!password) {
+      newErrors.password = 'Senha obrigatória';
+    } else if (password.length < 8 || !/[A-Za-zÀ-ÿ]/.test(password) || !/\d/.test(password)) {
+      newErrors.password = 'A senha precisa ter 8 caracteres, uma letra e um número';
+    }
+
+    if (!confirmPassword) {
+      newErrors.confirmPassword = 'Confirme sua senha';
+    } else if (password !== confirmPassword) {
+      newErrors.confirmPassword = 'As senhas não coincidem';
     }
 
     setErrors(newErrors);
@@ -69,7 +121,7 @@ export default function RegisterScreen() {
         createdAt: new Date().toISOString(),
       });
       setToken(MOCK_AUTH.token);
-      router.replace('/(onboarding)/step-1-genres');
+      router.replace('/(tabs)');
     }
   };
 
@@ -91,7 +143,6 @@ export default function RegisterScreen() {
           keyboardShouldPersistTaps="handled"
           showsVerticalScrollIndicator={false}
         >
-          {/* Botao voltar */}
           <Pressable
             style={({ pressed }) => [styles.backButton, pressed && styles.pressed]}
             onPress={() => router.back()}
@@ -99,16 +150,12 @@ export default function RegisterScreen() {
             <BackIcon />
           </Pressable>
 
-          {/* Header */}
           <View style={styles.header}>
             <Text style={styles.title}>Criar conta</Text>
             <Text style={styles.subtitle}>Sua jornada musical começa aqui</Text>
           </View>
 
-          {/* Formulario */}
           <View style={styles.form}>
-
-            {/* Nome + Sobrenome */}
             <View style={styles.row}>
               <View style={styles.halfField}>
                 <Text style={styles.label}>Nome</Text>
@@ -117,11 +164,15 @@ export default function RegisterScreen() {
                   placeholder="João"
                   placeholderTextColor={colors.textSecondary}
                   value={name}
-                  onChangeText={setName}
+                  onChangeText={(value) => {
+                    setName(value);
+                    clearError('name');
+                  }}
                   autoCapitalize="words"
                 />
                 {errors.name && <Text style={styles.errorText}>{errors.name}</Text>}
               </View>
+
               <View style={styles.halfField}>
                 <Text style={styles.label}>Sobrenome</Text>
                 <TextInput
@@ -129,14 +180,16 @@ export default function RegisterScreen() {
                   placeholder="Silva"
                   placeholderTextColor={colors.textSecondary}
                   value={lastName}
-                  onChangeText={setLastName}
+                  onChangeText={(value) => {
+                    setLastName(value);
+                    clearError('lastName');
+                  }}
                   autoCapitalize="words"
                 />
                 {errors.lastName && <Text style={styles.errorText}>{errors.lastName}</Text>}
               </View>
             </View>
 
-            {/* Data de Nascimento */}
             <View style={styles.fieldGroup}>
               <Text style={styles.label}>Data de Nascimento</Text>
               <TextInput
@@ -144,14 +197,16 @@ export default function RegisterScreen() {
                 placeholder="DD/MM/AAAA"
                 placeholderTextColor={colors.textSecondary}
                 value={birthDate}
-                onChangeText={(text) => setBirthDate(formatBirthDate(text))}
+                onChangeText={(text) => {
+                  setBirthDate(formatBirthDate(text));
+                  clearError('birthDate');
+                }}
                 keyboardType="numeric"
                 maxLength={10}
               />
               {errors.birthDate && <Text style={styles.errorText}>{errors.birthDate}</Text>}
             </View>
 
-            {/* Email */}
             <View style={styles.fieldGroup}>
               <Text style={styles.label}>E-mail</Text>
               <TextInput
@@ -159,7 +214,11 @@ export default function RegisterScreen() {
                 placeholder="seu@email.com"
                 placeholderTextColor={colors.textSecondary}
                 value={email}
-                onChangeText={setEmail}
+                onChangeText={(value) => {
+                  setEmail(value);
+                  clearError('email');
+                  clearError('confirmEmail');
+                }}
                 keyboardType="email-address"
                 autoCapitalize="none"
                 autoCorrect={false}
@@ -167,7 +226,6 @@ export default function RegisterScreen() {
               {errors.email && <Text style={styles.errorText}>{errors.email}</Text>}
             </View>
 
-            {/* Confirmar Email */}
             <View style={styles.fieldGroup}>
               <Text style={styles.label}>Confirmar E-mail</Text>
               <TextInput
@@ -175,7 +233,10 @@ export default function RegisterScreen() {
                 placeholder="seu@email.com"
                 placeholderTextColor={colors.textSecondary}
                 value={confirmEmail}
-                onChangeText={setConfirmEmail}
+                onChangeText={(value) => {
+                  setConfirmEmail(value);
+                  clearError('confirmEmail');
+                }}
                 keyboardType="email-address"
                 autoCapitalize="none"
                 autoCorrect={false}
@@ -183,7 +244,6 @@ export default function RegisterScreen() {
               {errors.confirmEmail && <Text style={styles.errorText}>{errors.confirmEmail}</Text>}
             </View>
 
-            {/* Senha */}
             <View style={styles.fieldGroup}>
               <Text style={styles.label}>Senha</Text>
               <View style={styles.inputWrapper}>
@@ -192,7 +252,11 @@ export default function RegisterScreen() {
                   placeholder="••••••••"
                   placeholderTextColor={colors.textSecondary}
                   value={password}
-                  onChangeText={setPassword}
+                  onChangeText={(value) => {
+                    setPassword(value);
+                    clearError('password');
+                    clearError('confirmPassword');
+                  }}
                   secureTextEntry={!showPassword}
                   autoCapitalize="none"
                 />
@@ -205,11 +269,10 @@ export default function RegisterScreen() {
               </View>
               {errors.password
                 ? <Text style={styles.errorText}>{errors.password}</Text>
-                : <Text style={styles.hint}>Pelo menos 8 caracteres e 1 número.</Text>
+                : <Text style={styles.hint}>Pelo menos 8 caracteres, 1 letra e 1 número.</Text>
               }
             </View>
 
-            {/* Confirmar Senha */}
             <View style={styles.fieldGroup}>
               <Text style={styles.label}>Confirmar Senha</Text>
               <View style={styles.inputWrapper}>
@@ -218,7 +281,10 @@ export default function RegisterScreen() {
                   placeholder="••••••••"
                   placeholderTextColor={colors.textSecondary}
                   value={confirmPassword}
-                  onChangeText={setConfirmPassword}
+                  onChangeText={(value) => {
+                    setConfirmPassword(value);
+                    clearError('confirmPassword');
+                  }}
                   secureTextEntry={!showConfirmPassword}
                   autoCapitalize="none"
                 />
@@ -231,16 +297,19 @@ export default function RegisterScreen() {
               </View>
               {errors.confirmPassword && <Text style={styles.errorText}>{errors.confirmPassword}</Text>}
             </View>
-
           </View>
 
-          {/* Botao cadastrar */}
           <Pressable
-            style={({ pressed }) => [styles.btnPrimary, pressed && styles.pressed]}
+            style={({ pressed }) => [
+              styles.btnPrimary,
+              !isFormComplete && styles.btnDisabled,
+              pressed && isFormComplete && styles.pressed,
+            ]}
             onPress={handleRegister}
+            disabled={!isFormComplete}
           >
             <LinearGradient
-              colors={[colors.primary, colors.secondary]}
+              colors={isFormComplete ? [colors.primary, colors.secondary] : ['#2A3142', '#2A3142']}
               start={{ x: 0, y: 0 }}
               end={{ x: 1, y: 0 }}
               style={styles.btnGradient}
@@ -248,7 +317,6 @@ export default function RegisterScreen() {
               <Text style={styles.btnText}>Concluir Cadastro</Text>
             </LinearGradient>
           </Pressable>
-
         </ScrollView>
       </KeyboardAvoidingView>
     </SafeAreaView>
@@ -404,6 +472,9 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     borderRadius: 999,
+  },
+  btnDisabled: {
+    opacity: 0.72,
   },
   btnText: {
     color: colors.textPrimary,
