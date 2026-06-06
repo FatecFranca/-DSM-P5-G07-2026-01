@@ -46,7 +46,7 @@ export class UsersService {
         id: user.id,
         name: user.name,
         email: user.email,
-        message: 'Usuário criado com sucesso. Complete o onboarding.',
+        message: 'Usuário criado com sucesso. Faça login para continuar.',
       };
     } catch (error: any) {
       if (error instanceof ConflictException) {

@@ -30,13 +30,13 @@ export class UsersController {
   })
   @ApiResponse({
     status: 201,
-    description: 'Usuário criado com sucesso - Onboarding obrigatório',
+    description: 'Usuário criado com sucesso - Faça login para continuar',
     schema: {
       example: {
         id: 'uuid-123',
         name: 'João Silva',
         email: 'joao@example.com',
-        message: '✅ Usuário criado com sucesso. Complete o onboarding (RN10).',
+        message: '✅ Usuário criado com sucesso. Faça login para continuar.',
       },
     },
   })
@@ -53,7 +53,7 @@ export class UsersController {
   @Throttle({ default: { limit: 5, ttl: 60000 } })
   @ApiOperation({
     summary: '🔑 Login de usuário',
-    description: 'RN07-RN09: Autentica e retorna JWT token. Valida email/senha com BCrypt (RNF-S03). Retorna onboardingDone para guiar o fluxo (RN10)',
+    description: 'RN07-RN09: Autentica e retorna JWT token. Valida email/senha com BCrypt (RNF-S03). ',
   })
   @ApiResponse({
     status: 200,
@@ -65,7 +65,7 @@ export class UsersController {
           id: 'uuid-123',
           name: 'João Silva',
           email: 'joao@example.com',
-          onboardingDone: true,
+         
         },
       },
     },
@@ -138,7 +138,7 @@ export class UsersController {
         user: {
           id: 'uuid-123',
           name: 'João Silva Updated',
-          favoriteGenres: ['rock', 'indie'],
+          
           energy: 0.8,
           valence: 0.6,
         },
@@ -216,7 +216,6 @@ export class UsersController {
           id: 'uuid-123',
           name: 'João Silva',
           email: 'joao@example.com',
-          onboardingDone: true,
           createdAt: '2026-05-20T10:00:00Z',
         },
       ],
@@ -241,7 +240,7 @@ export class UsersController {
   @ApiParam({ name: 'id', description: 'ID do usuário' })
   @ApiOperation({
     summary: '👤 Obter dados do usuário',
-    description: 'Retorna perfil do usuário (nome, email, onboarding, gêneros, pref áudio)',
+    description: 'Retorna perfil do usuário (nome, email  )',
   })
   @ApiResponse({
     status: 200,
@@ -251,9 +250,6 @@ export class UsersController {
         id: 'uuid-123',
         name: 'João Silva',
         email: 'joao@example.com',
-        onboardingDone: true,
-        favoriteGenres: ['rock', 'indie'],
-        audioPreference: 'mixed',
         createdAt: '2026-05-20T10:00:00Z',
       },
     },
