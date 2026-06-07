@@ -156,12 +156,6 @@ npm run start:prod
 
 ---
 
-## 📚 Documentação
-
-Para mais detalhes sobre a arquitetura, fluxos e especificações técnicas, consulte:
-- [Documentação Completa](./docs/music-selector.md)
-
----
 
 ## 👥 Contribuidores
 
