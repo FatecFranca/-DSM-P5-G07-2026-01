@@ -20,7 +20,7 @@ Desenvolvimento de um **sistema de recomendação musical hiperpersonalizado** u
 
 ### 2. **Motor de Recomendação Híbrido** *(Core)*
 - **Vibes Diárias**: Playlists automáticas adaptadas ao perfil (Foco, Treino, Relaxamento)
-- **Criar Minha Vibe**: Gerador sob demanda baseado em Atividade, Energia e Humor
+- **Criar Minha Vibe**: Gerador sob demanda baseado em Objetivo, Energia e Humor
 
 
 ## 💻 Stack de Tecnologias
