@@ -1,166 +1,202 @@
-# 🎵 Music Selector - Sistema Inteligente de Recomendação Musical
+# VibeAI - Sistema Inteligente de Recomendação Musical
 
-> Sistema multiplataforma de recomendação musical guiado por Inteligência Artificial | PI 5º Semestre - Fatec
-
----
-
-## 🎯 Objetivo
-
-Desenvolvimento de um **sistema de recomendação musical hiperpersonalizado** utilizando Machine Learning. O aplicativo classifica e sugere músicas com base no **estado emocional** e no **contexto situacional** do usuário, transcendendo os filtros tradicionais de gênero.
+> Aplicativo mobile de recomendação musical guiado por Inteligência Artificial | Projeto Integrador - 5º semestre Fatec
 
 ---
 
-## ⚙️ Funcionalidades Principais
+## Objetivo
 
-### 1. **Autenticação e Gestão de Usuário**
-- Cadastro enxuto (Nome, Data de Nascimento, E-mail, Senha)
-- Recuperação de acesso via "Esqueci minha senha"
+O **VibeAI** é um sistema de recomendação musical hiperpersonalizado. O aplicativo gera playlists sob demanda a partir do objetivo do usuário, do humor atual e da energia desejada para a música, usando uma API principal em NestJS, um banco PostgreSQL com Prisma e um serviço de Machine Learning em Python.
 
+A proposta é ir além de filtros tradicionais de gênero musical, oferecendo recomendações explicáveis e alinhadas ao momento do usuário.
 
+---
 
-### 2. **Motor de Recomendação Híbrido** *(Core)*
-- **Vibes Diárias**: Playlists automáticas adaptadas ao perfil (Foco, Treino, Relaxamento)
-- **Criar Minha Vibe**: Gerador sob demanda baseado em Objetivo, Energia e Humor
+## Funcionalidades Principais
 
+### Autenticação e Gestão de Usuário
 
-## 💻 Stack de Tecnologias
+- Cadastro com nome, sobrenome, data de nascimento, e-mail e senha.
+- Login com validação de credenciais.
+- Recuperação de senha por código de 6 dígitos enviado por e-mail.
+- Perfil com dados do usuário, logout e exclusão de conta.
 
-### 📱 **Front-end (Mobile)**
+### Criação de Vibes
+
+- Fluxo de criação em três etapas:
+  - Objetivo da música.
+  - Humor atual.
+  - Intensidade/energia desejada.
+- Geração de playlist personalizada integrada ao backend e ao módulo de Machine Learning.
+- Redirecionamento automático para a playlist gerada.
+- Salvamento das vibes criadas na Home do usuário.
+
+### Home e Playlists
+
+- Tela **Suas Vibes** com as playlists criadas pelo usuário.
+- Estado vazio orientando o usuário a criar a primeira vibe.
+- Cards de vibes salvas com acesso aos detalhes da playlist.
+- Exclusão de vibes com confirmação.
+
+### Explicabilidade
+
+- Tela de detalhes da playlist com lista de faixas recomendadas.
+- Tela **DNA da Faixa** com atributos musicais, gráfico e explicação da recomendação.
+
+---
+
+## Stack de Tecnologias
+
+### Front-end Mobile
+
 - **Framework:** React Native
 - **Tooling:** Expo
-- **Linguagem:** JavaScript / TypeScript
+- **Navegação:** Expo Router
+- **Estado:** Zustand
+- **Linguagem:** TypeScript
 
-### ⚙️ **Back-end (API Principal)**
+### Back-end
+
 - **Ambiente:** Node.js
 - **Framework:** NestJS
 - **Linguagem:** TypeScript
 - **Banco de Dados:** PostgreSQL
 - **ORM:** Prisma
+- **Documentação da API:** Swagger
 
-### 🧠 **Módulo de Machine Learning**
+### Machine Learning
+
 - **Linguagem:** Python
-- **Framework de API:** FastAPI
-- **Algoritmo Principal:** Random Forest Classifier
-- **Bibliotecas:** Scikit-learn, Pandas, NumPy
-
-### ☁️ **Infraestrutura**
-- **Provedor:** Microsoft Azure
-- **Recursos:** Banco de dados, API Node.js e microserviço Python
+- **API:** FastAPI
+- **Modelo:** Random Forest Classifier
+- **Bibliotecas:** Scikit-learn, Pandas e NumPy
 
 ---
 
-## 📁 Estrutura do Projeto
+## Estrutura do Projeto
 
-```
-MusicSelector/
+```text
+.
 ├── back-end/
-│   └── music-selector/          # API NestJS
+│   └── music-selector/          # API principal em NestJS
 │       ├── src/
-│       │   ├── auth/            # Módulo de autenticação
-│       │   ├── users/           # Módulo de usuários
-│       │   ├── recommendations/ # Motor de recomendações
+│       │   ├── auth/            # Autenticação e JWT
+│       │   ├── users/           # Usuários e recuperação de senha
+│       │   ├── recommendations/ # Recomendações e vibes
 │       │   ├── common/          # Utilidades compartilhadas
-│       │   ├── prisma/          # Serviço do Prisma
-│       │   └── generated/       # Tipos gerados pelo Prisma
+│       │   └── prisma/          # Serviço do Prisma
 │       ├── prisma/
-│       │   └── schema.prisma    # Schema do banco de dados
-│       ├── test/                # Testes E2E
+│       │   └── schema.prisma    # Modelagem do banco
 │       └── package.json
-├── docs/
-│   └── music-selector.md        # Documentação detalhada
-└── README.md                    # Este arquivo
+├── ml/                          # Serviço de Machine Learning
+│   ├── api_vibe.py              # API FastAPI
+│   ├── gerar_vibes.py           # Scripts de geração/modelagem
+│   ├── data/                    # Dados utilizados pelo modelo
+│   ├── modelos/                 # Modelos treinados
+│   └── requirements.txt
+├── vibeai/                      # Aplicativo mobile Expo/React Native
+│   ├── app/                     # Rotas e telas
+│   ├── components/              # Componentes visuais
+│   ├── services/                # Cliente da API
+│   ├── store/                   # Estado global
+│   └── package.json
+└── README.md
 ```
 
 ---
 
-## 🚀 Como Começar
+## Como Executar
 
 ### Pré-requisitos
-- Node.js 18+ ou superior
-- npm ou yarn
-- PostgreSQL configurado
-- Variáveis de ambiente (`.env`)
 
-### Instalação
+- Node.js 18+.
+- npm.
+- Python 3.11+.
+- PostgreSQL configurado.
+- Expo Go ou Android Studio para executar o app mobile.
+- Arquivos `.env` configurados no backend e no frontend.
 
-1. **Clonar o repositório**
-   ```bash
-   git clone <repository-url>
-   cd MusicSelector
-   ```
+### Back-end
 
-2. **Instalar dependências do back-end**
-   ```bash
-   cd back-end/music-selector
-   npm install
-   ```
-
-3. **Configurar variáveis de ambiente**
-   ```bash
-   cp .env.example .env
-   # Editar .env com suas configurações
-   ```
-
-4. **Executar migrações do banco de dados**
-   ```bash
-   npx prisma migrate dev
-   npx prisma generate
-   ```
-
-5. **(Opcional) Seed com dataset completo**
-   ```bash
-   # Carrega tracks e generos do CSV em dataset/clean_with_vibe_full.csv
-   SEED_DATASET=true npm run db:seed
-   ```
-
-### Executar
-
-**Desenvolvimento**
 ```bash
+cd back-end/music-selector
+npm install
+npx prisma migrate dev
+npx prisma generate
 npm run start:dev
 ```
 
-**Produção**
+Para popular o banco com o dataset:
+
 ```bash
-npm run build
-npm run start:prod
+SEED_DATASET=true npm run db:seed
+```
+
+### Machine Learning
+
+```bash
+cd ml
+python -m venv .venv
+.venv\Scripts\activate
+pip install -r requirements.txt
+uvicorn api_vibe:app --reload
+```
+
+### Front-end Mobile
+
+```bash
+cd vibeai
+npm install
+npx expo start -c
+```
+
+No emulador Android, a URL da API local geralmente deve apontar para:
+
+```text
+EXPO_PUBLIC_API_URL=http://10.0.2.2:3000
 ```
 
 ---
 
-## 📝 Scripts Disponíveis
+## Scripts Úteis
+
+### Back-end
 
 | Comando | Descrição |
-|---------|-----------|
-| `npm run start` | Inicia a aplicação |
-| `npm run start:dev` | Inicia em modo desenvolvimento com watch |
-| `npm run start:debug` | Inicia com debug ativo |
-| `npm run start:prod` | Inicia em modo produção |
-| `npm run build` | Compila o projeto |
-| `npm run lint` | Executa linting com ESLint |
-| `npm run format` | Formata código com Prettier |
+| --- | --- |
+| `npm run start:dev` | Inicia a API em modo desenvolvimento |
+| `npm run build` | Compila o backend |
+| `npm run start:prod` | Executa a versão compilada |
+| `npm run lint` | Executa o ESLint |
 | `npm run test` | Executa testes unitários |
-| `npm run test:watch` | Executa testes em modo watch |
-| `npm run test:cov` | Executa testes com cobertura |
 | `npm run test:e2e` | Executa testes end-to-end |
-| `npm run db:push` | Sincroniza schema com banco (dev) |
+| `npm run db:push` | Sincroniza o schema com o banco em desenvolvimento |
 | `npm run db:seed` | Executa seed do banco |
 
+### Front-end
+
+| Comando | Descrição |
+| --- | --- |
+| `npm run start` | Inicia o Expo |
+| `npm run android` | Abre o app no Android |
+| `npm run ios` | Abre o app no iOS |
+| `npm run web` | Executa a versão web do Expo |
+
 ---
 
-## 🔄 Fluxo do Sistema
+## Fluxo do Sistema
 
-1. **Autenticação**: Usuário realiza cadastro/login via app mobile
-2. **Recomendação**: Sistema gera playlists automáticas ou sob demanda
-3. **Explicabilidade**: App exibe análise das características musicais sugeridas
+1. O usuário cria uma conta ou faz login no aplicativo.
+2. A Home exibe as vibes já criadas ou orienta a criação da primeira vibe.
+3. O usuário acessa **Criar Vibe** e informa objetivo, humor e energia desejada.
+4. O backend processa a solicitação, consulta o serviço de Machine Learning e salva a vibe gerada.
+5. O app abre a playlist criada e permite visualizar o DNA das faixas recomendadas.
+6. As vibes criadas permanecem disponíveis na Home do usuário.
 
 ---
 
+## Contribuidores
 
-## 👥 Contribuidores
+Projeto desenvolvido como **Projeto Integrador** do 5º semestre - Fatec.
 
-Projeto desenvolvido como **Projeto Integrador** do 5º semestre - Fatec
-Integrantes: Vinicius de Araújo Silva, Paulo Ricardo Alvino Azevedo, Thiago Cunha Archete.
-      
----
-
+Integrantes: Vinicius de Araújo Silva, Paulo Ricardo Alvino Azevedo e Thiago Cunha Archete Silva.

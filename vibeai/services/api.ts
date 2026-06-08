@@ -207,7 +207,7 @@ function normalizeUser(user: User): User {
 function normalizeGeneratedPlaylist(playlist: BackendGeneratedPlaylist): Playlist {
   return {
     id: playlist.playlistId,
-    name: playlist.playlistName,
+    name: normalizePlaylistName(playlist.playlistName, playlist.objective),
     objective: playlist.objective,
     mood: playlist.mood,
     energyLevel: playlist.energyLevel,
@@ -227,13 +227,46 @@ function normalizeStoredPlaylist(playlist: BackendStoredPlaylist): Playlist {
 
   return {
     id: playlist.id,
-    name: playlist.name,
+    name: normalizePlaylistName(playlist.name),
     mood: playlist.mood,
     energyLevel: playlist.energyLevel,
     generatedAt: String(playlist.generatedAt),
     tracks,
     totalTracks: tracks.length,
   };
+}
+
+function normalizePlaylistName(name: string, objective?: ObjectiveType) {
+  const objectiveNames: Record<ObjectiveType, string> = {
+    FOCUS: 'Foco',
+    WORKOUT: 'Energia',
+    RELAX: 'Calma',
+    MOOD_BOOST: 'Bom humor',
+  };
+
+  if (objective) {
+    return objectiveNames[objective];
+  }
+
+  const legacyName = name.trim();
+
+  if (/^focus\s+.+\s+vibe$/i.test(legacyName)) {
+    return objectiveNames.FOCUS;
+  }
+
+  if (/^workout\s+.+\s+vibe$/i.test(legacyName)) {
+    return objectiveNames.WORKOUT;
+  }
+
+  if (/^relax\s+.+\s+vibe$/i.test(legacyName)) {
+    return objectiveNames.RELAX;
+  }
+
+  if (/^mood boost\s+.+\s+vibe$/i.test(legacyName)) {
+    return objectiveNames.MOOD_BOOST;
+  }
+
+  return name;
 }
 
 function normalizeTrack(track: BackendTrack): Track {

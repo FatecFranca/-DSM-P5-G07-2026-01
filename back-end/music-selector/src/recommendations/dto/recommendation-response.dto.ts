@@ -62,7 +62,7 @@ export class RecommendationResponseDto {
   @ApiProperty({ example: '550e8400-e29b-41d4-a716-446655440000' })
   playlistId!: string;
 
-  @ApiProperty({ example: 'My Focus Vibe' })
+  @ApiProperty({ example: 'Foco' })
   playlistName!: string;
 
   @ApiProperty({ example: 'FOCUS' })
@@ -97,7 +97,7 @@ export class AutomaticRecommendationDto {
   @ApiProperty({ example: '550e8400-e29b-41d4-a716-446655440001' })
   playlistId!: string;
 
-  @ApiProperty({ example: 'Vibe Diária: Foco' })
+  @ApiProperty({ example: 'Foco' })
   playlistName!: string;
 
   @ApiProperty({ example: 'FOCUS' })

@@ -51,7 +51,7 @@ export class RecommendationsController {
     schema: {
       example: {
         playlistId: 'uuid',
-        playlistName: 'Workout HAPPY Vibe',
+        playlistName: 'Energia',
         objective: 'WORKOUT',
         mood: 'HAPPY',
         energyLevel: 'HIGH',

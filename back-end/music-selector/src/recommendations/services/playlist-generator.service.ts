@@ -4,7 +4,6 @@ import { Vibe } from '../../generated/prisma/enums';
 import type { TrackModel } from '../../generated/prisma/models/Track';
 import {
   GetRecommendationsDto,
-  MoodType,
   ObjectiveType,
 } from '../dto/get-recommendations.dto';
 import { MLService } from './ml.service';
@@ -99,7 +98,7 @@ export class PlaylistGeneratorService {
   ) {
     const playlist = await this.playlistService.createPlaylist({
       userId,
-      name: this.generateObjectivePlaylistName(dto.objective, dto.mood),
+      name: this.generateObjectivePlaylistName(dto.objective),
       energyLevel: dto.energyLevel,
       mood: dto.mood,
       type,
@@ -197,17 +196,14 @@ export class PlaylistGeneratorService {
     return shuffledTracks;
   }
 
-  private generateObjectivePlaylistName(
-    objective: ObjectiveType,
-    mood: MoodType,
-  ): string {
+  private generateObjectivePlaylistName(objective: ObjectiveType): string {
     const objectiveNames: Record<ObjectiveType, string> = {
-      [ObjectiveType.FOCUS]: 'Focus',
-      [ObjectiveType.WORKOUT]: 'Workout',
-      [ObjectiveType.RELAX]: 'Relax',
-      [ObjectiveType.MOOD_BOOST]: 'Mood Boost',
+      [ObjectiveType.FOCUS]: 'Foco',
+      [ObjectiveType.WORKOUT]: 'Energia',
+      [ObjectiveType.RELAX]: 'Calma',
+      [ObjectiveType.MOOD_BOOST]: 'Bom humor',
     };
 
-    return `${objectiveNames[objective]} ${mood} Vibe`;
+    return objectiveNames[objective];
   }
 }
